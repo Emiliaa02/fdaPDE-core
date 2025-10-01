@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <gtest/gtest.h>   // testing framework
-// include eigen now to avoid possible linking errors
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+// #include <gtest/gtest.h>   // testing framework
+// // include eigen now to avoid possible linking errors
+// #include <Eigen/Dense>
+// #include <Eigen/Sparse>
 
 /*
 // utils
@@ -53,10 +53,32 @@
 #include "src/fspai_test.cpp"
 */
 
-int main(/*int argc, char** argv*/) {
-    // // start testing
-    // testing::InitGoogleTest(&argc, argv);
-    // return RUN_ALL_TESTS();
+// int main(/*int argc, char** argv*/) {
+//     // // start testing
+//     // testing::InitGoogleTest(&argc, argv);
+//     // return RUN_ALL_TESTS();
 
-  return 0;
+//   return 0;
+// }
+
+
+#include <fdaPDE/geometry.h>
+#include <nlohmann/json.hpp>
+using namespace fdapde;
+using json = nlohmann::json;
+
+
+
+int main() {
+
+// caricate mesh dall'esterno
+Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+
+// fate operazioni...
+for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
+  std::cout << it->measure() << std::endl;
 }
+ 
+return 0;
+}
+

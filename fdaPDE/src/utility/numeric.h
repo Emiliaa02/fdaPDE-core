@@ -39,21 +39,44 @@ constexpr int binomial_coefficient(const int n, const int m) {
     return factorial(n) / (factorial(m) * factorial(n - m));
 }
 // binomial_coefficient(n, k) x k matrix of combinations of k elements from a set of n
-constexpr std::vector<int> combinations(int k, int n) {
-    std::vector<bool> bitmask(k, 1);
-    bitmask.resize(n, 0);
-    std::vector<int> result(binomial_coefficient(n, k) * k);
+// std::vector<int> combinations(int k, int n) {
+//     std::vector<bool> bitmask(k, 1);
+//     bitmask.resize(n, 0);
+//     std::vector<int> result(binomial_coefficient(n, k) * k);
+//     int j = 0;
+//     do {
+//         int l = 0;
+//         for (int i = 0; i < n; ++i) {
+//             if (bitmask[i]) {
+//                 result[j * k + l] = i;
+//                 l++;
+//             }
+//         }
+//         j++;
+//     } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+//     return result;
+// }
+
+template <int K, int N>
+constexpr std::array<int, K * binomial_coefficient(N, K)> combinations() {
+    constexpr int num_comb = binomial_coefficient(N, K);
+    std::array<int, K * num_comb> result{};
+    std::array<int, K> indices{};
+    for (int i = 0; i < K; ++i)
+        indices[i] = i;
     int j = 0;
-    do {
-        int l = 0;
-        for (int i = 0; i < n; ++i) {
-            if (bitmask[i]) {
-                result[j * k + l] = i;
-                l++;
-            }
-        }
-        j++;
-    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+    while (true) {
+        for (int l = 0; l < K; ++l)
+            result[j * K + l] = indices[l];
+
+        ++j;
+        int i = K - 1;
+        while (i >= 0 && indices[i] == N - K + i) --i;
+        if (i < 0) break;
+        ++indices[i];
+        for (int l = i + 1; l < K; ++l)
+            indices[l] = indices[l - 1] + 1;
+    }
     return result;
 }
 

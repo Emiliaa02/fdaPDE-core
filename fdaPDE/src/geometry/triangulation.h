@@ -271,7 +271,7 @@ template <int N> class Triangulation<2, N> : public TriangulationBase<2, N, Tria
     using Base::n_nodes_per_cell;
     static constexpr auto edge_pattern =
       Matrix<int, binomial_coefficient(n_nodes_per_cell, n_nodes_per_edge), n_nodes_per_edge>(
-        combinations(n_nodes_per_edge, n_nodes_per_cell));
+        combinations<n_nodes_per_edge, n_nodes_per_cell>());
     static constexpr auto facet_pattern = edge_pattern;
 
     Triangulation() = default;
@@ -633,11 +633,11 @@ template <> class Triangulation<3, 3> : public TriangulationBase<3, 3, Triangula
     using Base::n_nodes_per_cell;
     static constexpr auto face_pattern =
       Matrix<int, binomial_coefficient(n_nodes_per_cell, n_nodes_per_face), n_nodes_per_face>(
-        combinations(n_nodes_per_face, n_nodes_per_cell));
+        combinations<n_nodes_per_face, n_nodes_per_cell>());
     static constexpr auto facet_pattern = face_pattern;
     static constexpr auto edge_pattern =
       Matrix<int, binomial_coefficient(n_nodes_per_face, n_nodes_per_edge), n_nodes_per_edge>(
-        combinations(n_nodes_per_edge, n_nodes_per_face));
+        combinations<n_nodes_per_edge, n_nodes_per_face>());
   
     Triangulation() = default;
     Triangulation(

@@ -61,7 +61,7 @@ template <typename V, typename W> constexpr std::unordered_map<V, W> map_reverse
 }   // namespace internals
 
 // sequence generator for {"base_0", "base_1", \ldots, "base_{n-1}"}
-constexpr std::vector<std::string> seq(const std::string& base, int n) {
+std::vector<std::string> seq(const std::string& base, int n) {
     std::vector<std::string> vec;
     vec.reserve(n);
     for (int i = 0; i < n; ++i) { vec.emplace_back(base + std::to_string(i)); }
@@ -70,7 +70,7 @@ constexpr std::vector<std::string> seq(const std::string& base, int n) {
 // sequence generator for {base + 0, base + 1, \ldots, base + n-1}
 template <typename T>
     requires(std::is_arithmetic_v<T>)
-constexpr std::vector<int> seq(T begin, int n, int by = 1) {
+std::vector<int> seq(T begin, int n, int by = 1) {
     std::vector<T> vec;
     vec.reserve(n);
     for (int i = 0; i < n; i += by) { vec.emplace_back(begin + i); }
