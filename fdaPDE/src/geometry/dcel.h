@@ -300,6 +300,16 @@ template <int LocalDim, int EmbedDim> class DCEL {
         for (int i = 0; i < nodes_.size(); ++i) { coords.row(nodes[i].id()) = nodes[i].coords(); }
         return coords;
     }
+
+    Eigen::Matrix<int, Eigen::Dynamic, 2> edges() const {
+        Eigen::Matrix<int, Eigen::Dynamic, 2> edge_vertices(halfedges_.size(), 2);
+        for(const auto it = halfedges_cbegin(); it != halfedges_cend(); ++it) {
+            edge_vertices(it->id(), 0) = it->node()->id_;
+            edge_vertices(it->id(), 1) = it->twin()->node()->id_;
+        }
+        return edge_vertices;
+    }
+
     int n_nodes() const { return nodes_.size(); }
     int n_halfedges() const { return halfedges_.size(); }   
     int n_cells() const { return cells_.size(); }

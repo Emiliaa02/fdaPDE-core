@@ -24,11 +24,35 @@ class Voronoi {
     }
 
     // struttura per codificare una cella di voronoi
-    struct cell_t {
+    struct cell_t : public DCEL::cell_t{
 
     double measure() const { internals::measure_2d_polygon(); };
     // accedere ai vertici della cella
+    std::list<DCEL::nodes_t*> cell_nodes() const {
+        std::list<DCEL::nodes_t*> cell_nodes;
+
+        std::list<DCEL::halfedge_t*> edges = cell_edges();
+        for(const auto it = edges.cbegin(); it != edges.cend(); ++it) {
+            cell_nodes.push_back((*it)->node());
+        }
+
+        return cell_nodes;
+    }   
     // accedere agli edge della cella
+    std::list<DCEL::halfedge_t*> cell_edges() const {
+        std::list<DCEL::halfedge_t*> cell_edges;
+
+        DCEL::halfedge_t* start = cell_->halfedge();
+        DCEL::halfedge_t* he = start;
+
+        do {
+            cell_edges.push_back(he);
+            he = he->next();
+        } while(he != start)
+
+        return cell_edges;
+    }
+
     bool is_unbounded() const { return unbounded_; }
 
     DCEL::cell_t* cell_;
@@ -51,8 +75,6 @@ class Voronoi {
     const_cell_iterator cells_cbegin(void) { return cells_.cbegin(); }
     const_cell_iterator cells_cend(void) { return cells_.cend(); }
 
-
-
     // DA IMPLEMENTARE SUBITO: (per plotting)
 
     // matrice dei nodi
@@ -69,6 +91,13 @@ class Voronoi {
     // matrici degli edge
     //   una matrice di interi (n_edge x 2) dove riga i-esima: 
     //          [id_nodo_1 i-esimo edge, id_nodo_2 i-esimo edge]
+
+    Eigen::Matrix<int, Eigen::Dynamic, 2> edges() const {
+        // calls edges() from DCEL
+        return dcel_.edges();
+    }
+
+    int n_edges(void) { return dcel_.n_edges(); }
 
     private:
     DCEL<LocalDim, EmbedDim> dcel_;
