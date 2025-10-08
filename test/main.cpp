@@ -63,9 +63,9 @@
 
 
 #include <fdaPDE/geometry.h>
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 using namespace fdapde;
-using json = nlohmann::json;
+// using json = nlohmann::json;
 
 
 

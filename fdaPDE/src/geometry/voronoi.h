@@ -14,7 +14,9 @@ class Voronoi {
     // algoritmi più efficienti e noti in lettaratura, implementate quelli!!)
     //   - calcolare i centroidi
     for(const auto& cell : mesh) {
-    cell.centroid();
+        // controlla in triangulation se esiste la funzione che ti da tutti i vertici 
+        // della mesh (che diventano centroidi in DCEL)
+        cell.centroid();
     }
 
     //   - "collegare" i centroidi
@@ -43,14 +45,20 @@ class Voronoi {
         std::list<DCEL::halfedge_t*> cell_edges;
 
         DCEL::halfedge_t* start = cell_->halfedge();
-        DCEL::halfedge_t* he = start;
+        if (!start) return;  // safety check
 
-        do {
-            cell_edges.push_back(he);
-            he = he->next();
-        } while(he != start)
+        for (DCEL::halfedge_t::circulator it(start); it; ++it) {
+            cell_edges.push_back(&(*it));
+        }
 
         return cell_edges;
+
+        // DCEL::halfedge_t* he = start;
+
+        // do {
+        //     cell_edges.push_back(he);
+        //     he = he->next();
+        // } while(he != start)
     }
 
     bool is_unbounded() const { return unbounded_; }
