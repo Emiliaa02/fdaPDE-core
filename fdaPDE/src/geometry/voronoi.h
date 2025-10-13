@@ -10,13 +10,90 @@ class Voronoi {
 
     Voronoi(const Triangulation& mesh) {
 
+    // controlla in triangulation se esiste la funzione che ti da tutti i vertici 
+    // della mesh (che diventano centroidi in DCEL)
+    // vedi riga 95 di trinagulation.h, in teoria semplicemente chiamando mesh->nodes() 
+    // dovresti avere una matrice di coordinate di nodi
+
     // calcola il duale (controllare gli articoli se quello sotto è il modo migliore, se esistono 
     // algoritmi più efficienti e noti in lettaratura, implementate quelli!!)
+
+    // Inizializza il DCEL
+    DCEL voronoi_dcel();
+
     //   - calcolare i centroidi
+    // Per farlo, all'interno del loop deve:
+    //      - Trovare il centroide
+    //      - Inserirlo nel DCEL
+    // Problema: il tipo di nodo che ti restituisce cell.circumenter() è Eigen::Matrix<double, embed_dim, 1>,
+    // mentre quello che vuole il DCEL è un oggetto del suo tipo node_t, il quale richiede di conoscere anche l'halfedge:
+    // node_t(int id, halfedge_t* halfedge, bool boundary, const CoordsType& coords)
+    // IDEA:
+    // - Loopa su tutte le celle e trova il centroide, e salva questa informazione, associando cell_id: centroide
+    // - Secondo loop sulle celle, per ciascuna cella: retrieva il centroide, loopa sulle neighbours, collega i due centroidi
+    // (considera che il minimal constructor del halfedge_t è halfedge_t(int id, node_t* node, bool sub= false))
+    // NB secondo me conviene che l'ID del centroide coincida con quello della cella di Delaunay, e l'ID del
+    // site del Voronoi con quello del nodo di Delaunay che gli coincide.
+
+    // Lookup
+    std::map<int, Simplex::NodeType> centroid_lookup();
+
+    // Loop to compute centroids
     for(const auto& cell : mesh) {
-        // controlla in triangulation se esiste la funzione che ti da tutti i vertici 
-        // della mesh (che diventano centroidi in DCEL)
-        cell.centroid();
+
+        // Retrieve ID 
+        int cell_id = mesh.id();
+        
+        // for this, take a look at simplex.h (Simplex::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
+        Simplex::NodeType centroid = cell.circumcenter();
+
+        // Add to lookup
+        centroid_lookup[cell_id] = centroid;
+    }
+
+    // Imagine to have the correspondence cell_id: centroid coordinates
+    for(const auto& cell : mesh) {
+
+        // Retrieve ID 
+        int cell_id = mesh.id();
+        
+        // Retrieve circumcenter
+        Simplex::NodeType centroid = centroid_lookup.at(cell_id);
+
+        // Get adjajent cells
+        Eigen::Matrix<int, Dynamic, 1> cell_neighbours = cell.neighbors();
+
+        // Loop over neighbouring cells
+        for (int neigh_cell_id : cell_neighbours) {
+
+            // Retrieve centroid of the neighbouring cell
+            Simplex::NodeType neigh_centroid = ; // Non ho trovato il metodo per farlo in trianulation.h
+
+            // Create halfededge
+            DCEL::halfedge_t cell_halfedge();
+            // Create node or retrieve it, if it is already in the DCEL (the part of checking is not implemented)
+            DCEL::node_t cell_node(cell_id, cell_halfedge, false, centroid);
+
+            // Create twin halfedge
+            DCEL::helfedge_t twin_halfedge()
+            // Create twin node or retrieve it, if it is already in the DCEL (the part of checking is not implemented)
+            DCEL::node_t twin_node(neigh_cell_id, twin_halfedge, false, neigh_centroid);
+
+            // Add node and twin to the halfedges
+            cell_halfedge.set_node(cell_node);
+            twin_halfedge.set_node(twin_node);
+            cell_halfedge.set_twin(twin_halfedge);
+            twin_halfedge.set_twin(cell_halfedge);
+
+            // Add the nodes IF THEY DO NOT ALREADY EXIST
+            voronoi_dcel.insert_node(cell_node)
+            voronoi_dcel.insert_node(twin_node)
+
+            // Add the halfedges
+            voronoi_dcel.insert_edge(cell_halfedge, twin_halfedge)
+
+        }
+
     }
 
     //   - "collegare" i centroidi
