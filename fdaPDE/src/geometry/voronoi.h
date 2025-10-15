@@ -36,7 +36,11 @@ class Voronoi {
     // site del Voronoi con quello del nodo di Delaunay che gli coincide.
 
     // Lookup
-    std::map<int, Simplex::NodeType> centroid_lookup();
+    std::map<int, Simplex::NodeType> centroid_lookup;
+    // Visited or not
+    std::map<int, bool> visited_centroids;
+    // boundary cell or not
+    std::map<int, bool> on_boundary;
 
     // Loop to compute centroids
     for(const auto& cell : mesh) {
@@ -49,6 +53,8 @@ class Voronoi {
 
         // Add to lookup
         centroid_lookup[cell_id] = centroid;
+        visited_centroids[cell_id] = false; 
+        on_boundary[cell_id] = false;
     }
 
     // Imagine to have the correspondence cell_id: centroid coordinates
@@ -57,27 +63,47 @@ class Voronoi {
         // Retrieve ID 
         int cell_id = mesh.id();
         
+        // check if the cell is on the boundary
+        if cell.on_boundary(){
+            on_boundary[cell_id] = true;
+        }
+
         // Retrieve circumcenter
         Simplex::NodeType centroid = centroid_lookup.at(cell_id);
 
         // Get adjajent cells
         Eigen::Matrix<int, Dynamic, 1> cell_neighbours = cell.neighbors();
+        
+        int counter = 0;
 
         // Loop over neighbouring cells
         for (int neigh_cell_id : cell_neighbours) {
 
             // Retrieve centroid of the neighbouring cell
-            Simplex::NodeType neigh_centroid = ; // Non ho trovato il metodo per farlo in trianulation.h
+            Simplex::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
 
             // Create halfededge
             DCEL::halfedge_t cell_halfedge();
+            cell_halfedge.set_id(counter++);
             // Create node or retrieve it, if it is already in the DCEL (the part of checking is not implemented)
-            DCEL::node_t cell_node(cell_id, cell_halfedge, false, centroid);
+            // Check if already 
+            if ! visited_centroids.at(cell_id){
+                DCEL::node_t cell_node(cell_id, cell_halfedge, false, centroid);
+            }
+            else{
+                DCEL::node_t cell_node = *voronoi_dcel.find_node(voronoi_dcel.nodes()[cell_id]);
+            }
 
             // Create twin halfedge
-            DCEL::helfedge_t twin_halfedge()
+            DCEL::helfedge_t twin_halfedge();
+            twin_halfedge.set_id(counter++);
             // Create twin node or retrieve it, if it is already in the DCEL (the part of checking is not implemented)
-            DCEL::node_t twin_node(neigh_cell_id, twin_halfedge, false, neigh_centroid);
+            if ! visited_centroids.at(neigh_cell_id){
+                DCEL::node_t twin_node(neigh_cell_id, twin_halfedge, false, neigh_centroid);
+            }
+            else{
+                DCEL::node_t twin_node = *voronoi_dcel.find_node(voronoi_dcel.nodes()[neigh_cell_id]);
+            }
 
             // Add node and twin to the halfedges
             cell_halfedge.set_node(cell_node);
@@ -86,19 +112,30 @@ class Voronoi {
             twin_halfedge.set_twin(cell_halfedge);
 
             // Add the nodes IF THEY DO NOT ALREADY EXIST
-            voronoi_dcel.insert_node(cell_node)
-            voronoi_dcel.insert_node(twin_node)
+            voronoi_dcel.insert_node(cell_node);
+            voronoi_dcel.insert_node(twin_node);
 
             // Add the halfedges
-            voronoi_dcel.insert_edge(cell_halfedge, twin_halfedge)
+            voronoi_dcel.insert_edge(cell_halfedge, twin_halfedge);
 
         }
+
+        // set the cell as visited
+        visited_centroids[cell_id] = true;
 
     }
 
     //   - "collegare" i centroidi
     //    -- costruire DCEL in modo tale che codifichi il voronoi
     //    -- identificare le celle unbounded
+
+    int n_cells = voronoi_dcel.n_cells();
+    std::list<cell_t> cells_(n_cells);
+
+    for (const auto it = voronoi_dcel.cells_cbegin(); it != voronoi_dcel.cells_cend(); ++it){+
+        cells.append(*it)
+        it->set_unbounded(on_boundary.at(it->id()))
+    }
 
     }
 
