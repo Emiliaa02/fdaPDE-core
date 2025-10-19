@@ -63,6 +63,8 @@
 
 
 #include <fdaPDE/geometry.h>
+#include <fdaPDE/src/geometry/voronoi.h>
+#include <fdaPDE/src/geometry/triangulation.h>
 #include <json.hpp>
 using namespace fdapde;
 // using json = nlohmann::json;
@@ -78,6 +80,8 @@ Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_
 for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
   std::cout << it->measure() << std::endl;
 }
+
+Voronoi<2,2> voronoissss(mesh);
  
 return 0;
 }
