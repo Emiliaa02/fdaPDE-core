@@ -77,9 +77,9 @@ int main() {
 Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 
 // fate operazioni...
-for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
-  std::cout << it->measure() << std::endl;
-}
+// for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
+//   std::cout << it->measure() << std::endl;
+// }
 
 Voronoi<2,2> voronoissss(mesh);
  

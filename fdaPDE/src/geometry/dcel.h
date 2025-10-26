@@ -128,7 +128,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         void set_twin(halfedge_t* twin) { twin_ = twin; }
         void set_node(node_t* node) { node_ = node; }
         void set_cell(cell_t* cell) { cell_ = cell; }
-        void set_id(int id) {id_=id;}
+        void set_id(int id) {std::cout << "siiiiiiii"; id_=id;}
         void set_it(std::list<halfedge_t>::iterator it) { it_ = it; }
         void set_segment(bool sub) { segment_ = sub; }
 
@@ -297,7 +297,8 @@ template <int LocalDim, int EmbedDim> class DCEL {
     // observers
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> nodes() const {   // matrix of nodes coordinates
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> coords(nodes_.size(), embed_dim);
-        for (int i = 0; i < nodes_.size(); ++i) { coords.row(nodes[i].id()) = nodes[i].coords(); }
+        for (auto it=nodes_.cbegin(); it!=nodes_.cend(); ++it) 
+        { coords.row(it->id()) = it->coords(); }
         return coords;
     }
 

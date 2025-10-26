@@ -8,6 +8,7 @@ namespace fdapde{
 
 template <int LocalDim, int EmbedDim>
 class Voronoi {
+    public:
 
     static constexpr int local_dim = LocalDim;
     static constexpr int embed_dim = EmbedDim;
@@ -57,13 +58,13 @@ class Voronoi {
     std::map<int, bool> on_boundary;
 
     // Loop to compute centroids
-    for(const auto& cell : mesh) {
+    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
         // Retrieve ID 
-        int cell_id = mesh.id();
+        int cell_id = it->id();
         
         // for this, take a look at simplex.h (mySimplex::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
-        typename mySimplex::NodeType centroid = cell.circumcenter();
+        typename mySimplex::NodeType centroid = it->circumcenter();
 
         // Add to lookup
         centroid_lookup[cell_id] = centroid;
@@ -72,13 +73,14 @@ class Voronoi {
     }
 
     // Imagine to have the correspondence cell_id: centroid coordinates
-    for(const auto& cell : mesh) {
+    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
+        std::cout<<"Trallalla"<<std::endl;
 
         // Retrieve ID 
-        int cell_id = mesh.id();
+        int cell_id = it->id();
         
         // check if the cell is on the boundary
-        if (cell.on_boundary()){
+        if (it->on_boundary()){
             on_boundary[cell_id] = true;
         }
 
@@ -86,15 +88,18 @@ class Voronoi {
         typename mySimplex::NodeType centroid = centroid_lookup.at(cell_id);
 
         // Get adjajent cells
-        Eigen::Matrix<int, Dynamic, 1> cell_neighbours = cell.neighbors();
+        Eigen::Matrix<int, Eigen::Dynamic, 1> cell_neighbours = it->neighbors();
         
         int counter = 0;
 
         // Loop over neighbouring cells
-        for (int neigh_cell_id : cell_neighbours) {
-
+        for (auto neigh_cell_id : cell_neighbours) {
+            std::cout << "\nCell ID " << cell_id << std::endl;
+            std::cout<<"\nneigh cell ID"<<std::endl;
+            
             // Retrieve centroid of the neighbouring cell
             typename mySimplex::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
+            std::cout << "After lookup";
 
             // Create halfededge
             typename myDCEL::halfedge_t cell_halfedge;
@@ -103,10 +108,10 @@ class Voronoi {
             // Check if already 
             typename myDCEL::node_t cell_node;
             if (! visited_centroids.at(cell_id)){
-                cell_node = myDCEL::node_t(cell_id, cell_halfedge, false, centroid);
+                cell_node = typename myDCEL::node_t(cell_id, &cell_halfedge, false, centroid);
             }
             else{
-                cell_node = *voronoi_dcel.find_node(voronoi_dcel.nodes()[cell_id]);
+                cell_node = *voronoi_dcel.find_node(voronoi_dcel.nodes().row(cell_id));
             }
 
             // Create twin halfedge
@@ -115,7 +120,7 @@ class Voronoi {
             // Create twin node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
             typename myDCEL::node_t twin_node;
             if (! visited_centroids.at(neigh_cell_id)){
-                twin_node = typename myDCEL::node_t(neigh_cell_id, twin_halfedge, false, neigh_centroid);
+                twin_node = typename myDCEL::node_t(neigh_cell_id, &twin_halfedge, false, neigh_centroid);
             }
             else{
                 twin_node = *voronoi_dcel.find_node(voronoi_dcel.nodes().row(neigh_cell_id));
@@ -148,7 +153,7 @@ class Voronoi {
     int n_cells = voronoi_dcel.n_cells();
     std::list<cell_t> cells_(n_cells);
 
-    for (auto it = voronoi_dcel.cells_cbegin(); it != voronoi_dcel.cells_cend(); ++it){
+    for (auto it = voronoi_dcel.cells_begin(); it != voronoi_dcel.cells_end(); ++it){
         cell_t whatever;
         whatever.set_cell(&(*it));
         cells_.push_back(whatever);
@@ -197,7 +202,7 @@ class Voronoi {
 
     bool is_unbounded() const { return unbounded_; }
 
-    void set_cell(const typename myDCEL::cell_t* cell_ptr){cell_ = cell_ptr;}
+    void set_cell(typename myDCEL::cell_t* cell_ptr){cell_ = cell_ptr;}
 
     typename myDCEL::cell_t* cell_;
     bool unbounded_; // cella unbounded o no?
