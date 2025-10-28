@@ -33,8 +33,6 @@ class Voronoi {
     // calcola il duale (controllare gli articoli se quello sotto è il modo migliore, se esistono 
     // algoritmi più efficienti e noti in lettaratura, implementate quelli!!)
 
-    // Inizializza il myDCEL
-    myDCEL voronoi_dcel;
 
     //   - calcolare i centroidi
     // Per farlo, all'interno del loop deve:
@@ -56,28 +54,43 @@ class Voronoi {
     std::map<int, bool> visited_centroids;
     // boundary cell or not
     std::map<int, bool> on_boundary;
+    // Old node ID : new node ID
+    std::map<int, int> old2new;
 
     // Loop to compute centroids
+    int cur_id = 0;
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
         // Retrieve ID 
         int cell_id = it->id();
+
+        // New ID
+        old2new[cell_id] = cur_id;
         
         // for this, take a look at simplex.h (mySimplex::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
         typename mySimplex::NodeType centroid = it->circumcenter();
 
+        // Insert inside the DCEL the node, without the halfedge
+        typename myDCEL::node_t cell_node(cur_id, false, centroid);
+        dcel_.insert_node(cell_node);
+
         // Add to lookup
-        centroid_lookup[cell_id] = centroid;
-        visited_centroids[cell_id] = false; 
-        on_boundary[cell_id] = false;
+        centroid_lookup[cur_id] = centroid;
+        visited_centroids[cur_id] = false; 
+        on_boundary[cur_id] = false;
+        cur_id += 1;
     }
 
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
-        std::cout<<"Trallalla"<<std::endl;
 
-        // Retrieve ID 
-        int cell_id = it->id();
+        // Retrieve old ID 
+        int old_cell_id = it->id();
+
+        // Retrieve new ID
+        int cell_id = old2new.at(old_cell_id);
+
+        // std::cout << "\nCell with ID: " << cell_id << std::endl;
         
         // check if the cell is on the boundary
         if (it->on_boundary()){
@@ -93,56 +106,79 @@ class Voronoi {
         int counter = 0;
 
         // Loop over neighbouring cells
-        for (auto neigh_cell_id : cell_neighbours) {
-            std::cout << "\nCell ID " << cell_id << std::endl;
-            std::cout<<"\nneigh cell ID"<<std::endl;
+        for (auto old_neigh_cell_id : cell_neighbours) {
             
-            // Retrieve centroid of the neighbouring cell
-            typename mySimplex::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
-            std::cout << "After lookup";
+            if (old_neigh_cell_id==-1){
+                // std::cout << "\nAbout to break..." << std::endl;
+                break;}
 
-            // Create halfededge
-            typename myDCEL::halfedge_t cell_halfedge;
-            cell_halfedge.set_id(counter++);
-            // Create node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
-            // Check if already 
-            typename myDCEL::node_t cell_node;
-            if (! visited_centroids.at(cell_id)){
-                cell_node = typename myDCEL::node_t(cell_id, &cell_halfedge, false, centroid);
-            }
-            else{
-                cell_node = *voronoi_dcel.find_node(voronoi_dcel.nodes().row(cell_id));
-            }
+            if (old_neigh_cell_id != -1){
+                // Retrieve new ID for neighbour
+                int neigh_cell_id = old2new.at(old_neigh_cell_id);
+            
+                // Retrieve centroid of the neighbouring cell
+                // std::cout << "\nRetrieving centroid...";
+                typename mySimplex::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
 
-            // Create twin halfedge
-            typename myDCEL::halfedge_t twin_halfedge;
-            twin_halfedge.set_id(counter++);
-            // Create twin node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
-            typename myDCEL::node_t twin_node;
-            if (! visited_centroids.at(neigh_cell_id)){
-                twin_node = typename myDCEL::node_t(neigh_cell_id, &twin_halfedge, false, neigh_centroid);
-            }
-            else{
-                twin_node = *voronoi_dcel.find_node(voronoi_dcel.nodes().row(neigh_cell_id));
-            }
+                // Create halfededge
+                // std::cout << "\nInitializing halfedge...";
+                typename myDCEL::halfedge_t cell_halfedge;
+                // std::cout << "\nSetting ID for halfedge...";
+                cell_halfedge.set_id(counter++);
+                // Create node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
+                // Check if already 
+                // std::cout << "\nInitializing cell node...";
+                typename myDCEL::node_t cell_node;
+                // std::cout << "\nAssigning cell node...";
+                // std::cout << "\nCheck on visited centroids content: " << visited_centroids.at(cell_id);
+                // std::cout << "\nCheck on bool condition: " <<  (!visited_centroids.at(cell_id));
+                if (! visited_centroids.at(cell_id)){
+                    // std::cout << "\nCell node does not have halfedge...";
+                    // cell_node = typename myDCEL::node_t(cell_id, &cell_halfedge, false, centroid);
+                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
+                    cell_node.set_halfedge(&cell_halfedge);
+                }
+                else{
+                    // std::cout << "\nCell node already exists...";
+                    // TODO: this gives problems
+                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
+                }
 
-            // Add node and twin to the halfedges
-            cell_halfedge.set_node(&cell_node);
-            twin_halfedge.set_node(&twin_node);
-            cell_halfedge.set_twin(&twin_halfedge);
-            twin_halfedge.set_twin(&cell_halfedge);
+                // Create twin halfedge
+                // std::cout << "\nCreating twin halfedge...";
+                typename myDCEL::halfedge_t twin_halfedge;
+                // std::cout << "\nSetting its ID...";
+                twin_halfedge.set_id(counter++);
+                // Create twin node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
+                // std::cout << "\nInitializing twin node...";
+                typename myDCEL::node_t twin_node;
+                // std::cout << "\nAssigning twin node...";
+                if (! visited_centroids.at(neigh_cell_id)){
+                    // twin_node = typename myDCEL::node_t(neigh_cell_id, &twin_halfedge, false, neigh_centroid);
+                    twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+                    twin_node.set_halfedge(&twin_halfedge);
+                }
+                else{
+                    twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+                }
 
-            // Add the nodes IF THEY DO NOT ALREADY EXIST
-            voronoi_dcel.insert_node(cell_node);
-            voronoi_dcel.insert_node(twin_node);
+                // Add node and twin to the halfedges
+                cell_halfedge.set_node(&cell_node);
+                twin_halfedge.set_node(&twin_node);
+                cell_halfedge.set_twin(&twin_halfedge);
+                twin_halfedge.set_twin(&cell_halfedge);
 
-            // Add the halfedges
-            voronoi_dcel.insert_edge(&cell_halfedge, &twin_halfedge);
+                // Add the nodes IF THEY DO NOT ALREADY EXIST
+                // dcel_.insert_node(cell_node);
+                // dcel_.insert_node(twin_node);
 
-        }
+                // Add the halfedges (true because, being twins, cells for the two halfedges are different)
+                dcel_.insert_edge(&cell_halfedge, &twin_halfedge, true);
 
         // set the cell as visited
         visited_centroids[cell_id] = true;
+        }
+    }
 
     }
 
@@ -150,16 +186,20 @@ class Voronoi {
     //    -- costruire myDCEL in modo tale che codifichi il voronoi
     //    -- identificare le celle unbounded
 
-    int n_cells = voronoi_dcel.n_cells();
+    int n_cells = dcel_.n_cells();
     std::list<cell_t> cells_(n_cells);
 
-    for (auto it = voronoi_dcel.cells_begin(); it != voronoi_dcel.cells_end(); ++it){
+    std::cout << "\nPopulating list of cells...";
+    for (auto it = dcel_.cells_begin(); it != dcel_.cells_end(); ++it){
+        std::cout << "\nInside loop";
         cell_t whatever;
         whatever.set_cell(&(*it));
         cells_.push_back(whatever);
         
         // it->set_unbounded(on_boundary.at(it->id()));
     }
+
+    std::cout << "\nFinished constructor" << std::endl;
 
     }
 
@@ -247,6 +287,8 @@ class Voronoi {
     }
 
     int n_edges(void) { return dcel_.n_edges(); }
+
+    int n_cells(void) { return cells_.size(); }
 
     private:
     myDCEL dcel_;

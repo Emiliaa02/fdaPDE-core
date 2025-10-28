@@ -128,7 +128,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         void set_twin(halfedge_t* twin) { twin_ = twin; }
         void set_node(node_t* node) { node_ = node; }
         void set_cell(cell_t* cell) { cell_ = cell; }
-        void set_id(int id) {std::cout << "siiiiiiii"; id_=id;}
+        void set_id(int id) {id_=id;}
         void set_it(std::list<halfedge_t>::iterator it) { it_ = it; }
         void set_segment(bool sub) { segment_ = sub; }
 
@@ -297,8 +297,15 @@ template <int LocalDim, int EmbedDim> class DCEL {
     // observers
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> nodes() const {   // matrix of nodes coordinates
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> coords(nodes_.size(), embed_dim);
-        for (auto it=nodes_.cbegin(); it!=nodes_.cend(); ++it) 
-        { coords.row(it->id()) = it->coords(); }
+        auto n_s = nodes_.size();
+        // std::cout << "\nINSIDE DCEL: looping over number of nodes: " << n_s;
+        for (auto it=nodes_.cbegin(); it!=nodes_.cend(); ++it) {
+        // {   std::cout << "\nINSIDE DCEL: Adding a node coords to the nodes() result...";
+            coords.row(it->id()) = it->coords(); 
+            // std::cout << "\nINSIDE DCEL: bool " << (whatever == nodes_.cend());
+            // std::cout << "\nINSIDE DCEL: Added...";
+        }
+        // std::cout << "INSIDE DCEL: Finished loop populating coords...";
         return coords;
     }
 

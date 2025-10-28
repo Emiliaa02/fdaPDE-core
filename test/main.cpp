@@ -81,7 +81,14 @@ Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_
 //   std::cout << it->measure() << std::endl;
 // }
 
-Voronoi<2,2> voronoissss(mesh);
+Voronoi<2,2> voronoi_obj(mesh);
+
+int n_nodes = voronoi_obj.n_nodes();
+int n_edges = voronoi_obj.n_edges();
+int n_cells = voronoi_obj.n_cells();
+
+
+std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
  
 return 0;
 }
