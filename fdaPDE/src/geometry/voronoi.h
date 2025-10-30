@@ -15,12 +15,14 @@ class Voronoi {
 
     using myDCEL = DCEL<local_dim, embed_dim>;
     using mySimplex = Simplex<local_dim, embed_dim>;
+    using myTriangulation = Triangulation<local_dim, embed_dim>
 
     // Voronoi(Matrix seed) {
 
     // // fare il delaunay dei seed O(n log(n))
+    // myTriangulation mesh;
     // // chiamo quello sotto (faccio il duale)
-
+    // return Voronoi(&mesh);
     // }
 
     Voronoi(const Triangulation<local_dim, embed_dim>& mesh) {
@@ -84,6 +86,9 @@ class Voronoi {
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
+        // Retrieve the IDs of the vertices of the current cell
+        Eigen::Matrix<int, Dynamic, 1> ids_node = it->node_ids();
+
         // Retrieve old ID 
         int old_cell_id = it->id();
 
@@ -107,6 +112,34 @@ class Voronoi {
 
         // Loop over neighbouring cells
         for (auto old_neigh_cell_id : cell_neighbours) {
+
+            // Retrieve the triangle in the mesh using the old id
+            Triangle::tria = Triangle::Triangle(old_neigh_cell_id, mesh);
+            Eigen::Matrix<int, Dynamic, 1> ids_neigh_node = tria.node_ids();
+
+            // Find the different id between this vertices and the cell ones
+            std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size())
+            std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size())
+
+            // Sort the vectors
+            std::sort(vec_1.begin(), vec_1.end());
+            std::sort(vec_2.begin(), vec_2.end());
+
+            std::vector<int> common;
+
+            // Take the common elements between the two
+            std::set_intersection(vec1.begin(), vec1.end(),
+                                vec2.begin(), vec2.end(),
+                                std::back_inserter(common));
+
+            // Assert that the common elements are two since they are adjacent cells
+            assert(common.size()==2)
+
+            // We need to ADD A CHECK to avoid to add the same cell two times
+            for(int ids : common){
+                cell_t curr_cell(ids)
+                cells_.push_back(cur_cell)
+            }
             
             if (old_neigh_cell_id==-1){
                 // std::cout << "\nAbout to break..." << std::endl;
@@ -189,15 +222,15 @@ class Voronoi {
     int n_cells = dcel_.n_cells();
     std::list<cell_t> cells_(n_cells);
 
-    std::cout << "\nPopulating list of cells...";
-    for (auto it = dcel_.cells_begin(); it != dcel_.cells_end(); ++it){
-        std::cout << "\nInside loop";
-        cell_t whatever;
-        whatever.set_cell(&(*it));
-        cells_.push_back(whatever);
+    // std::cout << "\nPopulating list of cells...";
+    // for (auto it = dcel_.cells_begin(); it != dcel_.cells_end(); ++it){
+    //     std::cout << "\nInside loop";
+    //     cell_t whatever;
+    //     whatever.set_cell(&(*it));
+    //     cells_.push_back(whatever);
         
-        // it->set_unbounded(on_boundary.at(it->id()));
-    }
+    //     // it->set_unbounded(on_boundary.at(it->id()));
+    // }
 
     std::cout << "\nFinished constructor" << std::endl;
 
