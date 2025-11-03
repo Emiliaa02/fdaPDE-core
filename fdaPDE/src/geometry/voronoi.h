@@ -114,12 +114,12 @@ class Voronoi {
         for (auto old_neigh_cell_id : cell_neighbours) {
 
             // Retrieve the triangle in the mesh using the old id
-            Triangle::tria = Triangle::Triangle(old_neigh_cell_id, mesh);
+            Triangle tria(old_neigh_cell_id, mesh);  // questo secondo me è sbagliato ma non so come si scrive
             Eigen::Matrix<int, Dynamic, 1> ids_neigh_node = tria.node_ids();
 
             // Find the different id between this vertices and the cell ones
-            std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size())
-            std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size())
+            std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
+            std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
 
             // Sort the vectors
             std::sort(vec_1.begin(), vec_1.end());
@@ -128,19 +128,25 @@ class Voronoi {
             std::vector<int> common;
 
             // Take the common elements between the two
-            std::set_intersection(vec1.begin(), vec1.end(),
-                                vec2.begin(), vec2.end(),
+            std::set_intersection(vec_1.begin(), vec_1.end(),
+                                vec_2.begin(), vec_2.end(),
                                 std::back_inserter(common));
 
             // Assert that the common elements are two since they are adjacent cells
-            assert(common.size()==2)
+            assert(common.size()==2);
 
-            // We need to ADD A CHECK to avoid to add the same cell two times
+            // Add the new cell to the list if it is not yet added 
             for(int ids : common){
-                cell_t curr_cell(ids)
-                cells_.push_back(cur_cell)
+                cell_t curr_cell(ids);
+                if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+                    cells_.push_back(curr_cell);
+                }
             }
-            
+
+            // PROMEMORIA: CI MANCA DA AGGIUNGERE GLI HALFEDGE ALLE CELLE --> VA CAPITO COME PERCHE' AD UNA VA ASSOCIATO L'HALFEDGE E AD UNA IL TWIN MA NON SO COME
+            // MANCA ANCHE DA CAPIRE COME AGGIUNGERE PREV E NEXT AGLI HALFEDGES
+            // SECONDO ME dobbiamo decidere se orientare gli halfedge intorno a un sito sempre in senso antiorario o orario e usare prodotto vettoriale (?)
+
             if (old_neigh_cell_id==-1){
                 // std::cout << "\nAbout to break..." << std::endl;
                 break;}
@@ -200,6 +206,7 @@ class Voronoi {
                 twin_halfedge.set_node(&twin_node);
                 cell_halfedge.set_twin(&twin_halfedge);
                 twin_halfedge.set_twin(&cell_halfedge);
+
 
                 // Add the nodes IF THEY DO NOT ALREADY EXIST
                 // dcel_.insert_node(cell_node);
