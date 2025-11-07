@@ -15,7 +15,7 @@ class Voronoi {
 
     using myDCEL = DCEL<local_dim, embed_dim>;
     using mySimplex = Simplex<local_dim, embed_dim>;
-    using myTriangulation = Triangulation<local_dim, embed_dim>
+    using myTriangulation = Triangulation<local_dim, embed_dim>;
 
     // Voronoi(Matrix seed) {
 
@@ -85,6 +85,7 @@ class Voronoi {
 
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
+        std::cout << "New mesh cell\n" << std::endl;
 
         // Retrieve the IDs of the vertices of the current cell
         Eigen::Matrix<int, Dynamic, 1> ids_node = it->node_ids();
@@ -110,38 +111,43 @@ class Voronoi {
         
         int counter = 0;
 
-        // Loop over neighbouring cells
+        // Keep the previous and the first halfedge
+        typename myDCEL::halfedge_t* passed_halfedge=nullptr;
+        typename myDCEL::halfedge_t* first_halfedge=nullptr;
+
+        // Loop over neighbouring cells (ASSUMING THEY ARE LOOPED IN CLOCKWISE ORDER)
         for (auto old_neigh_cell_id : cell_neighbours) {
+            std::cout << "Neighbour" << std::endl;
 
-            // Retrieve the triangle in the mesh using the old id
-            Triangle tria(old_neigh_cell_id, mesh);  // questo secondo me è sbagliato ma non so come si scrive
-            Eigen::Matrix<int, Dynamic, 1> ids_neigh_node = tria.node_ids();
+        //     // Retrieve the triangle in the mesh using the old id
+        //     Triangle tria(old_neigh_cell_id, mesh);  // questo secondo me è sbagliato ma non so come si scrive
+        //     Eigen::Matrix<int, Dynamic, 1> ids_neigh_node = tria.node_ids();
 
-            // Find the different id between this vertices and the cell ones
-            std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
-            std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
+        //     // Find the different id between this vertices and the cell ones
+        //     std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
+        //     std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
 
-            // Sort the vectors
-            std::sort(vec_1.begin(), vec_1.end());
-            std::sort(vec_2.begin(), vec_2.end());
+        //     // Sort the vectors
+        //     std::sort(vec_1.begin(), vec_1.end());
+        //     std::sort(vec_2.begin(), vec_2.end());
 
-            std::vector<int> common;
+        //     std::vector<int> common;
 
-            // Take the common elements between the two
-            std::set_intersection(vec_1.begin(), vec_1.end(),
-                                vec_2.begin(), vec_2.end(),
-                                std::back_inserter(common));
+        //     // Take the common elements between the two
+        //     std::set_intersection(vec_1.begin(), vec_1.end(),
+        //                         vec_2.begin(), vec_2.end(),
+        //                         std::back_inserter(common));
 
-            // Assert that the common elements are two since they are adjacent cells
-            assert(common.size()==2);
+        //     // Assert that the common elements are two since they are adjacent cells
+        //     assert(common.size()==2);
 
-            // Add the new cell to the list if it is not yet added 
-            for(int ids : common){
-                cell_t curr_cell(ids);
-                if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
-                    cells_.push_back(curr_cell);
-                }
-            }
+        //     // Add the new cell to the list if it is not yet added 
+        //     for(int ids : common){
+        //         cell_t curr_cell(ids);
+        //         if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+        //             cells_.push_back(curr_cell);
+        //         }
+        //     }
 
             // PROMEMORIA: CI MANCA DA AGGIUNGERE GLI HALFEDGE ALLE CELLE --> VA CAPITO COME PERCHE' AD UNA VA ASSOCIATO L'HALFEDGE E AD UNA IL TWIN MA NON SO COME
             // MANCA ANCHE DA CAPIRE COME AGGIUNGERE PREV E NEXT AGLI HALFEDGES
@@ -187,25 +193,61 @@ class Voronoi {
                 // std::cout << "\nCreating twin halfedge...";
                 typename myDCEL::halfedge_t twin_halfedge;
                 // std::cout << "\nSetting its ID...";
-                twin_halfedge.set_id(counter++);
+                
                 // Create twin node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
                 // std::cout << "\nInitializing twin node...";
                 typename myDCEL::node_t twin_node;
                 // std::cout << "\nAssigning twin node...";
                 if (! visited_centroids.at(neigh_cell_id)){
+                    twin_halfedge.set_id(counter++);
                     // twin_node = typename myDCEL::node_t(neigh_cell_id, &twin_halfedge, false, neigh_centroid);
                     twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
                     twin_node.set_halfedge(&twin_halfedge);
+
+                    // Add node and twin to the halfedges
+                    cell_halfedge.set_node(&cell_node);
+                    twin_halfedge.set_node(&twin_node);
+                    cell_halfedge.set_twin(&twin_halfedge);
+                    twin_halfedge.set_twin(&cell_halfedge);
                 }
                 else{
-                    twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+                    // Here you basically want to retrieve halfedges already created from the neighbouring and attach them 
+                    // To the ones of the current cell. The problem is that for a node you cannot easily retrieve the halfedge on the 
+                    // cell one wants
+                    
+                    // std::cout << "Found neighbouring already visited" << std::endl;
+                    // twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+                    // std::cout << "True? " << (twin_node.halfedge()==nullptr) << std::endl;
+                    // // This is where we get SEGMENTATION FAULT BECAAUSE TWIN NODE HALFEDGE IS NULL. BUT IT SHOULD NOT!!
+                    // twin_halfedge = *twin_node.halfedge();
+                    // std::cout << "2" << std::endl;
+                    // cell_halfedge = *twin_node.halfedge()->twin();
+                    // std::cout << "3" << std::endl;
                 }
 
-                // Add node and twin to the halfedges
-                cell_halfedge.set_node(&cell_node);
-                twin_halfedge.set_node(&twin_node);
-                cell_halfedge.set_twin(&twin_halfedge);
-                twin_halfedge.set_twin(&cell_halfedge);
+                
+
+                // Set previous and next
+                if (passed_halfedge!=nullptr){
+                    passed_halfedge->twin()->set_next(&cell_halfedge);
+                    cell_halfedge.set_prev(passed_halfedge->twin());
+                }
+                else{
+                    first_halfedge = &cell_halfedge;
+                }
+
+                passed_halfedge = &cell_halfedge;
+
+                // if (visited_centroids.at(neigh_cell_id)){
+                //     std::cout << "Set prev and next in visited neighbour" << std::endl;
+                //     auto entering_neighbour_halfedge = twin_node.halfedge();
+                //     std::cout << "First checkpoint" << std::endl;
+                //     twin_halfedge.set_prev(entering_neighbour_halfedge);
+                //     std::cout << "Second checkpoint" << std::endl;
+                //     // THE FOLLOWING LINE GIVES SEGMENTATION FAULT
+                //     cell_halfedge.set_next(entering_neighbour_halfedge->twin());
+                //     std::cout << "Third checkpoint" << std::endl;
+                // }
 
 
                 // Add the nodes IF THEY DO NOT ALREADY EXIST
@@ -217,8 +259,12 @@ class Voronoi {
 
         // set the cell as visited
         visited_centroids[cell_id] = true;
+        visited_centroids[neigh_cell_id] = true;
         }
     }
+
+    passed_halfedge->twin()->set_next(first_halfedge);
+    first_halfedge->set_prev(passed_halfedge->twin());
 
     }
 
