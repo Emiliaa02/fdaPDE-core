@@ -83,6 +83,8 @@ class Voronoi {
         cur_id += 1;
     }
 
+// ==========================================================================================================================================
+
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
         std::cout << "New mesh cell\n" << std::endl;
@@ -164,109 +166,99 @@ class Voronoi {
                 // Retrieve centroid of the neighbouring cell
                 // std::cout << "\nRetrieving centroid...";
                 typename mySimplex::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
-
-                // Create halfededge
-                // std::cout << "\nInitializing halfedge...";
-                typename myDCEL::halfedge_t cell_halfedge;
-                // std::cout << "\nSetting ID for halfedge...";
-                cell_halfedge.set_id(counter++);
-                // Create node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
-                // Check if already 
-                // std::cout << "\nInitializing cell node...";
+                
+                // Create cell node
                 typename myDCEL::node_t cell_node;
-                // std::cout << "\nAssigning cell node...";
-                // std::cout << "\nCheck on visited centroids content: " << visited_centroids.at(cell_id);
-                // std::cout << "\nCheck on bool condition: " <<  (!visited_centroids.at(cell_id));
-                if (! visited_centroids.at(cell_id)){
-                    // std::cout << "\nCell node does not have halfedge...";
-                    // cell_node = typename myDCEL::node_t(cell_id, &cell_halfedge, false, centroid);
-                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
-                    cell_node.set_halfedge(&cell_halfedge);
-                }
-                else{
-                    // std::cout << "\nCell node already exists...";
-                    // TODO: this gives problems
-                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
-                }
 
-                // Create twin halfedge
-                // std::cout << "\nCreating twin halfedge...";
-                typename myDCEL::halfedge_t twin_halfedge;
-                // std::cout << "\nSetting its ID...";
-                
-                // Create twin node or retrieve it, if it is already in the myDCEL (the part of checking is not implemented)
-                // std::cout << "\nInitializing twin node...";
+                // Create twin node 
                 typename myDCEL::node_t twin_node;
-                // std::cout << "\nAssigning twin node...";
-                if (! visited_centroids.at(neigh_cell_id)){
+
+                // Create halfedge centroid -> neigh
+                typename myDCEL::halfedge_t cell_halfedge;
+
+                // Create twin halfedge (neigh -> centroid)
+                typename myDCEL::halfedge_t twin_halfedge;
+
+                // Centroid was not visited
+                if (! visited_centroids.at(cell_id)){
+
+                    // Set IDs based on counter
+                    cell_halfedge.set_id(counter++);
                     twin_halfedge.set_id(counter++);
-                    // twin_node = typename myDCEL::node_t(neigh_cell_id, &twin_halfedge, false, neigh_centroid);
+
+                    // Find nodes
+                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
                     twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
-                    twin_node.set_halfedge(&twin_halfedge);
 
-                    // Add node and twin to the halfedges
-                    cell_halfedge.set_node(&cell_node);
-                    twin_halfedge.set_node(&twin_node);
-                    cell_halfedge.set_twin(&twin_halfedge);
-                    twin_halfedge.set_twin(&cell_halfedge);
+                    // If neighbouring cell was not visited, its node needs an halfedge
+                    if (! visited_centroids.at(neigh_cell_id)){
+                        // Set halfedge to the cell centroid
+                        cell_node.set_halfedge(&cell_halfedge);
+                        // Set halfedge to the neighbouring centroid
+                        twin_node.set_halfedge(&twin_halfedge);
+                    }
+
+                    // Else, only the cell centroid needs an halfedge
+                    else{
+                        // Set halfedge to the cell centroid
+                        cell_node.set_halfedge(&cell_halfedge);
+
+                        // QUA VA RETRIEVATO L'EDGE GIUSTO 
+                    }
                 }
+
+                // Centroid was visited
                 else{
-                    // Here you basically want to retrieve halfedges already created from the neighbouring and attach them 
-                    // To the ones of the current cell. The problem is that for a node you cannot easily retrieve the halfedge on the 
-                    // cell one wants
-                    
-                    // std::cout << "Found neighbouring already visited" << std::endl;
-                    // twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
-                    // std::cout << "True? " << (twin_node.halfedge()==nullptr) << std::endl;
-                    // // This is where we get SEGMENTATION FAULT BECAAUSE TWIN NODE HALFEDGE IS NULL. BUT IT SHOULD NOT!!
-                    // twin_halfedge = *twin_node.halfedge();
-                    // std::cout << "2" << std::endl;
-                    // cell_halfedge = *twin_node.halfedge()->twin();
-                    // std::cout << "3" << std::endl;
+
+                    // Find nodes
+                    cell_node = *dcel_.find_node(dcel_.nodes().row(cell_id));
+                    twin_node = *dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+
+                    // If neighbouring cell was not visited, its node needs an halfedge
+                    // (NB: QUESTO IF SAREBBE INUTILE, PERCHE NON CI SONO MAI CASI IN CUI SI VERIFICA L'ELSE, 
+                    // CIOE ENTRAMBI I NODI SONO GIA STATI VISITATI)
+                    if (! visited_centroids.at(neigh_cell_id)){
+                        // Set halfedge to the neighbouring centroid
+                        twin_node.set_halfedge(&twin_halfedge);
+                    }
                 }
 
-                
+                // Add node and twin to the halfedges
+                cell_halfedge.set_node(&cell_node);
+                twin_halfedge.set_node(&twin_node);
+                cell_halfedge.set_twin(&twin_halfedge);
+                twin_halfedge.set_twin(&cell_halfedge);
 
-                // Set previous and next
-                if (passed_halfedge!=nullptr){
-                    passed_halfedge->twin()->set_next(&cell_halfedge);
-                    cell_halfedge.set_prev(passed_halfedge->twin());
-                }
-                else{
-                    first_halfedge = &cell_halfedge;
-                }
-
-                passed_halfedge = &cell_halfedge;
-
-                // if (visited_centroids.at(neigh_cell_id)){
-                //     std::cout << "Set prev and next in visited neighbour" << std::endl;
-                //     auto entering_neighbour_halfedge = twin_node.halfedge();
-                //     std::cout << "First checkpoint" << std::endl;
-                //     twin_halfedge.set_prev(entering_neighbour_halfedge);
-                //     std::cout << "Second checkpoint" << std::endl;
-                //     // THE FOLLOWING LINE GIVES SEGMENTATION FAULT
-                //     cell_halfedge.set_next(entering_neighbour_halfedge->twin());
-                //     std::cout << "Third checkpoint" << std::endl;
-                // }
-
-
-                // Add the nodes IF THEY DO NOT ALREADY EXIST
-                // dcel_.insert_node(cell_node);
-                // dcel_.insert_node(twin_node);
 
                 // Add the halfedges (true because, being twins, cells for the two halfedges are different)
                 dcel_.insert_edge(&cell_halfedge, &twin_halfedge, true);
 
-        // set the cell as visited
-        visited_centroids[cell_id] = true;
-        visited_centroids[neigh_cell_id] = true;
+                // set the cell as visited
+                visited_centroids[cell_id] = true;
+                visited_centroids[neigh_cell_id] = true;
         }
     }
 
-    passed_halfedge->twin()->set_next(first_halfedge);
-    first_halfedge->set_prev(passed_halfedge->twin());
-
     }
+
+
+
+    // QUA VANNO FATTI I PREV E NEXT. DOPPIO LOOP SU CELLE, SPERANDO CHE LE NEIGHBOURING 
+    // VENGANO GIRATE IN SENSO ORARIO
+    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it){
+        for (auto old_neigh_cell_id : cell_neighbours){
+            // Chiamiamo e2 l'halfedge corrente (cioè cell->neigh corrente),
+            // ed e1 quello passato (cell->neigh precedente)
+            // dobbiamo semplicemente fare e1->twin->next = e2,
+            // e2->prev = e1->twin
+        }
+    }
+
+
+
+// ==========================================================================================================================================
+
+
 
     //   - "collegare" i centroidi
     //    -- costruire myDCEL in modo tale che codifichi il voronoi
