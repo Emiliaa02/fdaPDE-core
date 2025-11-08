@@ -20,9 +20,10 @@ class Voronoi {
     // Voronoi(Matrix seed) {
 
     // // fare il delaunay dei seed O(n log(n))
-    // myTriangulation mesh;
+    // typename myTriangulation mesh const;
     // // chiamo quello sotto (faccio il duale)
     // return Voronoi(&mesh);
+
     // }
 
     Voronoi(const Triangulation<local_dim, embed_dim>& mesh) {
@@ -114,8 +115,12 @@ class Voronoi {
         int counter = 0;
 
         // Keep the previous and the first halfedge
-        typename myDCEL::halfedge_t* passed_halfedge=nullptr;
-        typename myDCEL::halfedge_t* first_halfedge=nullptr;
+        // typename myDCEL::halfedge_t* passed_halfedge=nullptr;
+        // typename myDCEL::halfedge_t* first_halfedge=nullptr;
+
+        // Pointers to e1 and e2 initialized as null_pointer
+        typename myDCEL::halfedge_t* e1 = nullptr;
+        typename myDCEL::halfedge_t* e2 = nullptr;
 
         // Loop over neighbouring cells (ASSUMING THEY ARE LOOPED IN CLOCKWISE ORDER)
         for (auto old_neigh_cell_id : cell_neighbours) {
@@ -236,23 +241,34 @@ class Voronoi {
                 // set the cell as visited
                 visited_centroids[cell_id] = true;
                 visited_centroids[neigh_cell_id] = true;
+
+                // Provo a fare qui
+                e2 = &cell_halfedge;  
+                if (e1 != nullptr){
+                    e1->twin->next = e2;
+                    e2->prev = e1.twin;
+                }
+                e1 = e2;
         }
     }
 
     }
-
-
 
     // QUA VANNO FATTI I PREV E NEXT. DOPPIO LOOP SU CELLE, SPERANDO CHE LE NEIGHBOURING 
     // VENGANO GIRATE IN SENSO ORARIO
-    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it){
-        for (auto old_neigh_cell_id : cell_neighbours){
-            // Chiamiamo e2 l'halfedge corrente (cioè cell->neigh corrente),
-            // ed e1 quello passato (cell->neigh precedente)
-            // dobbiamo semplicemente fare e1->twin->next = e2,
-            // e2->prev = e1->twin
-        }
-    }
+    // for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it){
+    //     // Initialize the halfedge as nullptr for each cell of the mesh
+    //     typename myDCEL::halfedge_t e1 = nullptr;
+    //     typename myDCEL::halfedge_t e2 = nullptr;
+    //     for (auto old_neigh_cell_id : cell_neighbours){
+    //         // Chiamiamo e2 l'halfedge corrente (cioè cell->neigh corrente),
+            
+    //         // ed e1 quello passato (cell->neigh precedente)
+    //         // dobbiamo semplicemente fare e1->twin->next = e2,
+    //         // e2->prev = e1->twin
+        
+    //     }
+    // }
 
 
 
