@@ -2,6 +2,7 @@
 #define __FDAPDE_VORONOI_H__
 
 
+// PROMEMORIA: CI MANCA DA AGGIUNGERE GLI HALFEDGE ALLE CELLE --> VA CAPITO COME PERCHE' AD UNA VA ASSOCIATO L'HALFEDGE E AD UNA IL TWIN MA NON SO COME
 
 
 namespace fdapde{
@@ -16,15 +17,15 @@ class Voronoi {
     using myDCEL = DCEL<local_dim, embed_dim>;
     using mySimplex = Simplex<local_dim, embed_dim>;
     using myTriangulation = Triangulation<local_dim, embed_dim>;
+    using myDelaunay = Delaunay<local_dim, embed_dim>;
 
-    // Voronoi(Matrix seed) {
-
-    // // fare il delaunay dei seed O(n log(n))
-    // typename myTriangulation mesh const;
-    // // chiamo quello sotto (faccio il duale)
-    // return Voronoi(&mesh);
-
-    // }
+    // Voronoi(Matrix seed)
+    // Ho scelto questi ingressi basandomi sul constructor in delaunay.h che usa random generated points e no refinement
+    // fare il delaunay dei seed O(n log(n)) --> I think that we can rely on the constructor in delaunay.h with random generated points, without no refinement
+    // chiamo quello sotto (faccio il duale)
+    Voronoi(const std::vector<Eigen::Matrix<double, Eigen::Dynamic, embed_dim>>& boundaries, int N=0, const std::vector<std::vector<Eigen::Matrix<double, Eigen::Dynamic, embed_dim>>>& holes = {{}}) 
+    : Voronoi(typename myDelaunay(boundaries, N, holes))
+    {};
 
     Voronoi(const Triangulation<local_dim, embed_dim>& mesh) {
 
@@ -155,10 +156,6 @@ class Voronoi {
         //             cells_.push_back(curr_cell);
         //         }
         //     }
-
-            // PROMEMORIA: CI MANCA DA AGGIUNGERE GLI HALFEDGE ALLE CELLE --> VA CAPITO COME PERCHE' AD UNA VA ASSOCIATO L'HALFEDGE E AD UNA IL TWIN MA NON SO COME
-            // MANCA ANCHE DA CAPIRE COME AGGIUNGERE PREV E NEXT AGLI HALFEDGES
-            // SECONDO ME dobbiamo decidere se orientare gli halfedge intorno a un sito sempre in senso antiorario o orario e usare prodotto vettoriale (?)
 
             if (old_neigh_cell_id==-1){
                 // std::cout << "\nAbout to break..." << std::endl;
