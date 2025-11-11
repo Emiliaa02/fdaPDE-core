@@ -40,6 +40,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         private:
          int id_;                  // global node index
          halfedge_t* halfedge_;    // any edge having this node as its origin
+         std::map<int, halfedge_t*> halfedges_lookup_;
          bool boundary_;           // asserted true if node is on boundary
          coords_t coords_;
          // code needed for conflict graph algorithm in delaunay.h
@@ -81,11 +82,25 @@ template <int LocalDim, int EmbedDim> class DCEL {
          const coords_t& coords() const { return coords_; }
          halfedge_t* halfedge() const { return halfedge_; }
          void set_halfedge(halfedge_t* halfedge) { halfedge_ = halfedge; }
+         void add_halfedge( int neigh_id, halfedge_t* connecting_halfedge ) { 
+            halfedges_lookup_[neigh_id] = connecting_halfedge; 
+            std::cout << "Map is:" << std::endl;
+            for (const auto & kv : halfedges_lookup_){
+                std::cout << kv.first << "\n";
+            }
+        }
          int id() const { return id_; }
          bool on_boundary() const { return boundary_; }
          void set_boundary(bool boundary) { boundary_ = boundary; }
          node_t* next() const { return halfedge_->next()->node(); }
          node_t* prev() const { return halfedge_->prev()->node(); }
+         halfedge_t* neighID2halfedge(int id) const { 
+            std::cout << "Map is:" << std::endl;
+            for (const auto & kv : halfedges_lookup_){
+                std::cout << kv.first << "\n";
+            }
+            return halfedges_lookup_.at(id); 
+        }
  
          // code for conflict graph algorithm in delaunay.h
          void set_conflict(cell_t* triangle) { conflicting_triangle_ = triangle; }
