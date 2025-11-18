@@ -84,10 +84,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
          void set_halfedge(halfedge_t* halfedge) { halfedge_ = halfedge; }
          void add_halfedge( int neigh_id, halfedge_t* connecting_halfedge ) { 
             halfedges_lookup_[neigh_id] = connecting_halfedge; 
-            std::cout << "Map is:" << std::endl;
-            for (const auto & kv : halfedges_lookup_){
-                std::cout << kv.first << "\n";
-            }
         }
          int id() const { return id_; }
          bool on_boundary() const { return boundary_; }
@@ -95,10 +91,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
          node_t* next() const { return halfedge_->next()->node(); }
          node_t* prev() const { return halfedge_->prev()->node(); }
          halfedge_t* neighID2halfedge(int id) const { 
-            std::cout << "Map is:" << std::endl;
-            for (const auto & kv : halfedges_lookup_){
-                std::cout << kv.first << "\n";
-            }
             return halfedges_lookup_.at(id); 
         }
  

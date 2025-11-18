@@ -121,53 +121,75 @@ class Voronoi {
         typename myDCEL::halfedge_t* e1 = nullptr;
         typename myDCEL::halfedge_t* e2 = nullptr;
 
-        // for (auto old_neigh_cell_id : cell_neighbours){
-        //     neigh[i] = {x= x-a, y=y-b}
+        // Make the orientation consistent
+        double determinant = 1;
+        std::vector<typename mySimplex::NodeType> nodes_cell;    
+        bool compute_det = true;
+        for (auto old_neigh_cell_id : cell_neighbours){
+            
+            if(old_neigh_cell_id == -1){
+                compute_det = false;
+                break;
+            }
 
-        // }
+            int new_neigh_id = old2new.at(old_neigh_cell_id);
 
-        // det = (x2-x1)*(y3-y1) - (y2-y1)*(x3-x1)
+            typename mySimplex::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
+            typename mySimplex::NodeType centered_neigh_coords;
+            for(int i = 0; i < embed_dim; i++){
+                centered_neigh_coords(i) = neigh_centroid_coords(i) - centroid(i);
+            }
+            nodes_cell.push_back(centered_neigh_coords);
+        }
+        if(compute_det){
+            determinant = (nodes_cell[1](0) - nodes_cell[0](0))*(nodes_cell[2](1) - nodes_cell[0](1)) - (nodes_cell[1](1) - nodes_cell[0](1))*(nodes_cell[2](0) - nodes_cell[0](0));
+            if(determinant < 0){
+                int tmp = cell_neighbours(0);
+                cell_neighbours(0) = cell_neighbours(1);
+                cell_neighbours(1) = tmp;
+            }
+        }
 
-        // if det <0{
-        //     my_cell_neiboughrs = cell_neighbours[0, 2, 1]
-        // }
-        
         bool prev_was_minus_1 = false;
         int count_existing_neigh = 0;
         
         // Loop over neighbouring cells (ASSUMING THEY ARE LOOPED IN CLOCKWISE ORDER)
         for (auto old_neigh_cell_id : cell_neighbours) {
 
-            // Retrieve the triangle in the mesh using the old id
-            myTriangle tria(old_neigh_cell_id, &mesh);  
-            auto ids_neigh_node = tria.node_ids();
+            if(old_neigh_cell_id != -1){
 
-            // Find the different id between this vertices and the cell ones
-            std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
-            std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
+                // Retrieve the triangle in the mesh using the old id
+                myTriangle tria(old_neigh_cell_id, &mesh);  
+                auto ids_neigh_node = tria.node_ids();
 
-            // Sort the vectors
-            std::sort(vec_1.begin(), vec_1.end());
-            std::sort(vec_2.begin(), vec_2.end());
+                // Find the different id between this vertices and the cell ones
+                std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
+                std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
 
-            std::vector<int> common;
+                // Sort the vectors
+                std::sort(vec_1.begin(), vec_1.end());
+                std::sort(vec_2.begin(), vec_2.end());
 
-            // Take the common elements between the two
-            std::set_intersection(vec_1.begin(), vec_1.end(),
-                                vec_2.begin(), vec_2.end(),
-                                std::back_inserter(common));
+                std::vector<int> common;
 
-            // Assert that the common elements are two since they are adjacent cells
-            assert(common.size()==2);
+                // Take the common elements between the two
+                std::set_intersection(vec_1.begin(), vec_1.end(),
+                                    vec_2.begin(), vec_2.end(),
+                                    std::back_inserter(common));
 
-            // Add the new cell to the list if it is not yet added 
-            for(int ids : common){
-                cell_t curr_cell(ids);
-                if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
-                    cells_.push_back(curr_cell);
+                // Assert that the common elements are two since they are adjacent cells
+                assert(common.size()==2);
+
+                // Add the new cell to the list if it is not yet added 
+                for(int ids : common){
+                    int new_ids = old2new.at(ids);
+                    cell_t curr_cell(new_ids);
+                    if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+                        cells_.push_back(curr_cell);
+                    }
                 }
+                
             }
-
 
             ////////////////////////////////////////////////////////
 
