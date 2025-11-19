@@ -152,6 +152,7 @@ class Voronoi {
 
         bool prev_was_minus_1 = false;
         int count_existing_neigh = 0;
+        int diff_id = 0;
         
         // Loop over neighbouring cells (ASSUMING THEY ARE LOOPED IN CLOCKWISE ORDER)
         for (auto old_neigh_cell_id : cell_neighbours) {
@@ -179,6 +180,20 @@ class Voronoi {
 
                 // Assert that the common elements are two since they are adjacent cells
                 assert(common.size()==2);
+
+                // Take the different id between the two
+                std::vector<int> tmp_diff;
+
+                // Element that is in vec_1 but not in vec_2
+                std::set_difference(
+                    vec_1.begin(), vec_1.end(),
+                    vec_2.begin(), vec_2.end(),
+                    std::back_inserter(tmp_diff)
+                );
+
+                // Assert that the different element is one since they are adjacent cells
+                assert(tmp_diff.size()==1);
+                diff_id = tmp_diff[0];
 
                 // Add the new cell to the list if it is not yet added 
                 for(int ids : common){
@@ -292,6 +307,14 @@ class Voronoi {
     {
     first_halfedge->twin()->set_next(e2);
     e2->set_prev(first_halfedge->twin());
+    }
+
+    if(count_existing_neigh == 1){
+        int new_diff_id = old2new.at(diff_id);
+        cell_t curr_cell_diff(new_diff_id);
+        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
+            cells_.push_back(curr_cell_diff);
+        }
     }
 
     }
