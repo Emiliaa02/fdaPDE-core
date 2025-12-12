@@ -74,7 +74,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
 
 // fate operazioni...
 // for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
@@ -89,6 +89,8 @@ int n_cells = voronoi_obj.n_cells();
 
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
+
+voronoi_obj.export_to_json("voronoi_circle.json");
  
 return 0;
 }

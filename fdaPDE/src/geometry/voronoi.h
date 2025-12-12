@@ -9,7 +9,17 @@ namespace fdapde{
 
 template <int LocalDim, int EmbedDim>
 class Voronoi {
+
+    static constexpr int local_dim = LocalDim;
+    static constexpr int embed_dim = EmbedDim;
+
+    using dcel_t = DCEL<local_dim, embed_dim>;
+    using simplex_t = Simplex<local_dim, embed_dim>;
+    using triangulation_t = Triangulation<local_dim, embed_dim>;
+    using triangle_t = Triangle<triangulation_t>;
+    
     public:
+    
     // using myDelaunay = Delaunay<local_dim, embed_dim>;
 
     // Voronoi(Matrix seed)
@@ -427,16 +437,16 @@ class Voronoi {
 
     int n_cells() { return cells_.size(); }
 
+    void export_to_json(const std::string& filename){
+        this->dcel_.export_to_json(filename);
+    }
+
+
+
     private:
     dcel_t dcel_;
-
-    static constexpr int local_dim = LocalDim;
-    static constexpr int embed_dim = EmbedDim;
-
-    using dcel_t = DCEL<local_dim, embed_dim>;
-    using simplex_t = Simplex<local_dim, embed_dim>;
-    using triangulation_t = Triangulation<local_dim, embed_dim>;
-    using triangle_t = Triangle<triangulation_t>;
+    
+   
 
     // List of cells
     std::list<cell_t> cells_;
