@@ -64,6 +64,7 @@
 
 #include <fdaPDE/geometry.h>
 #include <fdaPDE/src/geometry/voronoi.h>
+#include <fdaPDE/src/geometry/delaunay.h>
 #include <fdaPDE/src/geometry/triangulation.h>
 #include <json.hpp>
 using namespace fdapde;
@@ -74,14 +75,50 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
+// Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
 
 // fate operazioni...
 // for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 //   std::cout << it->measure() << std::endl;
 // }
 
-Voronoi<2,2> voronoi_obj(mesh);
+// Construct an object boundary for the Delaunay
+std::vector<Eigen::Matrix<double, Eigen::Dynamic, 2>> boundaries_entry;
+Eigen::Matrix<double, Eigen::Dynamic, 2> first_side;
+// Eigen::Matrix<double, Eigen::Dynamic, 2> second_side;
+// Eigen::Matrix<double, Eigen::Dynamic, 2> third_side;
+// Eigen::Matrix<double, Eigen::Dynamic, 2> fourth_side;
+first_side.resize(4,2);
+first_side(0, 0) = 0.0; first_side(0, 1) = 0.0;
+first_side(1, 0) = 1.0; first_side(1, 1) = 0.0;
+first_side(2, 0) = 1.0; first_side(2, 1) = 1.0;
+first_side(3, 0) = 0.0; first_side(3, 1) = 1.0;
+
+// first_side(6, 0) = 0.0; first_side(6, 1) = 1.0;
+// first_side(7, 0) = 0.0; first_side(7, 1) = 0.0;
+boundaries_entry.resize(1);
+boundaries_entry[0] = first_side;
+// boundaries_entry.push_back(second_side);
+// boundaries_entry.push_back(third_side);
+// boundaries_entry.push_back(fourth_side);
+
+// DCEL<2,2> dcel_obj;
+// std::vector<Eigen::Matrix<double, Eigen::Dynamic, 2>> holes;
+//dcel_obj.from_triangulation(mesh, holes);
+
+// BinaryVector<Dynamic> boundaries = mesh.boundary_nodes();
+// std::cout<<"Boundary nodes"<< boundaries<<std::endl;
+double min_angle = 30;
+double max_area = 1;
+Delaunay<2,2> delaunay_obj(boundaries_entry, min_angle, max_area, 10);
+//delaunay_obj.flip();
+DCEL<2,2> dcel_obj = delaunay_obj.dcel();
+std::string filename = "delaunay_square";
+
+dcel_obj.export_to_json(filename);
+
+Triangulation<2, 2> mesh_obj = dcel_obj.to_triangulation<Triangulation<2, 2>>();
+Voronoi<2,2> voronoi_obj(mesh_obj);
 
 int n_nodes = voronoi_obj.n_nodes();
 int n_edges = voronoi_obj.n_edges();

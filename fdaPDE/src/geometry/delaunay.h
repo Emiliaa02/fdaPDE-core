@@ -565,7 +565,7 @@ class Delaunay {
         dcel_= dcel_t::make_polygon(boundaries[0], holes[0]);
        
         if(boundaries.size() == 1 ){
-            polygon_t polygon(boundaries[0], holes[0]);
+            polygon_t polygon(boundaries[0]); //, holes[0]);
             auto triangulation = polygon.triangulation();
             dcel_.from_triangulation(triangulation, holes[0]);
         }
@@ -613,7 +613,7 @@ class Delaunay {
                 } 
                 if(holes.size() == i)
                     holes.push_back({});
-                polygon_t polygon(boundaries[i], holes[i]);
+                polygon_t polygon(boundaries[i]); //, holes[i]);
                 auto triangulation = polygon.triangulation();
                 // update holes[i] edges to the cell of boundary i 
                 for (int j = 0; j < holes[i].size(); ++j) {
