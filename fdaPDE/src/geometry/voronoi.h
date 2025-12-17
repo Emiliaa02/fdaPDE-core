@@ -350,6 +350,52 @@ class Voronoi {
 
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // struttura per codificare una cella di voronoi
     struct cell_t : public dcel_t::cell_t{
 
@@ -393,13 +439,71 @@ class Voronoi {
 
     typename dcel_t::cell_t* cell_;
     bool unbounded_; // cella unbounded o no?
+
+    double measure(){
+        std::vector<typename dcel_t::node_t*> points_list = cell_nodes();
+        std::list<typename dcel_t::coords_t> points_coords;
+        for(int i=0; i<points_list.size(); ++i){
+            points_coords.push_back(points_list[i] -> coords());
+        }
+        return internals::signed_measure_2d_polygon(&points_coords);
+    }
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // iteratori sulle celle
     // in futuro vorremmo poter fare
     // for(auto it = voronoi.cells_begin(); it != voronoi.cells_end(); ++it) {
     //       it->measure(); // misura della cella
     // }
+
+    
 
     // iterators
     using cell_iterator = std::list<cell_t>::iterator;
