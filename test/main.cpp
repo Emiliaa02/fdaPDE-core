@@ -67,6 +67,7 @@
 #include <fdaPDE/src/geometry/delaunay.h>
 #include <fdaPDE/src/geometry/triangulation.h>
 #include <json.hpp>
+#include <limits>
 using namespace fdapde;
 // using json = nlohmann::json;
 
@@ -80,9 +81,9 @@ Triangulation<2, 2> mesh("data/mesh/quasi_circle/points.csv", "data/mesh/quasi_c
 Voronoi<2, 2> voronoi_obj(mesh);
 
 // fate operazioni...
-for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-  std::cout << it->measure() << std::endl;
-}
+// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+//   std::cout << it->measure() << std::endl;
+// }
 
 // int n_nodes = voronoi_obj.n_nodes();
 // int n_edges = voronoi_obj.n_edges();

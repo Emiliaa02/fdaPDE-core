@@ -60,11 +60,11 @@ class Voronoi {
     int n_mesh_vertices = mesh.n_nodes();
 
     // Lookup
-    std::vector<typename simplex_t::NodeType> centroid_lookup(n_mesh_faces);
+    std::vector<typename simplex_t::NodeType> centroid_lookup(n_mesh_faces+1);
     // Visited or not
-    std::vector<bool> visited_centroids(n_mesh_faces);
+    std::vector<bool> visited_centroids(n_mesh_faces+1);
     // boundary cell or not
-    std::vector<bool> on_boundary(n_mesh_faces);
+    std::vector<bool> on_boundary(n_mesh_faces+1);
     // Old node ID : new node ID
     std::vector<int> old2new(n_mesh_faces);
     // cell with halfedge
@@ -93,6 +93,16 @@ class Voronoi {
         on_boundary[cur_id] = false;
         cur_id += 1;
     }
+
+    int infty_id = cur_id;
+
+    typename simplex_t::NodeType centroid_infty = simplex_t::NodeType::Constant(std::numeric_limits<double>::infinity());
+
+    centroid_lookup[infty_id] = centroid_infty;
+    visited_centroids[infty_id] = false;
+    on_boundary[infty_id] = false;
+
+    typename dcel_t::node_t infty_node(infty_id, false, centroid_infty);
 
 // ==========================================================================================================================================
 
@@ -244,99 +254,143 @@ class Voronoi {
 
             ////////////////////////////////////////////////////////
 
-            if (old_neigh_cell_id==-1){
-                prev_was_minus_1 = true;
-                continue;}
+            // if (old_neigh_cell_id==-1){
+            //     prev_was_minus_1 = true;
+            //     continue;}
+
+
+
+
+
+
+
+
+
+            int neigh_cell_id;
 
             if (old_neigh_cell_id != -1){
                 // Retrieve new ID for neighbour
-                int neigh_cell_id = old2new.at(old_neigh_cell_id);
+                neigh_cell_id = old2new.at(old_neigh_cell_id);
             
                 // Retrieve centroid of the neighbouring cell
                 typename simplex_t::NodeType neigh_centroid = centroid_lookup.at(neigh_cell_id); 
-                
-                // Create cell node
-                typename dcel_t::node_t* cell_node;
+            }
+            else{
 
-                // Create twin node 
-                typename dcel_t::node_t* twin_node;
+                // prev_was_minus_1 = true;
 
-                // Create halfedge centroid -> neigh
-                typename dcel_t::halfedge_t* cell_halfedge = new dcel_t::halfedge_t();
+                // It is the infinity node
+                neigh_cell_id = infty_id;
+            }
+            
+            // Create cell node
+            typename dcel_t::node_t* cell_node;
 
-                // Create twin halfedge (neigh -> centroid)
-                typename dcel_t::halfedge_t* twin_halfedge = new dcel_t::halfedge_t();
+            // Create twin node 
+            typename dcel_t::node_t* twin_node;
 
-                // Set IDs based on counter
-                // cell_halfedge.set_id(counter++);
-                // twin_halfedge.set_id(counter++);
+            // Create halfedge centroid -> neigh
+            typename dcel_t::halfedge_t* cell_halfedge = new dcel_t::halfedge_t();
 
-                // Find nodes
-                cell_node = dcel_.find_node(dcel_.nodes().row(cell_id));
+            // Create twin halfedge (neigh -> centroid)
+            typename dcel_t::halfedge_t* twin_halfedge = new dcel_t::halfedge_t();
+
+            // Set IDs based on counter
+            // cell_halfedge.set_id(counter++);
+            // twin_halfedge.set_id(counter++);
+
+            // Find nodes
+            cell_node = dcel_.find_node(dcel_.nodes().row(cell_id));
+
+            if (old_neigh_cell_id != -1){
                 twin_node = dcel_.find_node(dcel_.nodes().row(neigh_cell_id));
+            }
+            else{
+                twin_node = &infty_node;
+            }
 
 
-                // If neighbouring cell was not visited, its node needs an halfedge
-                if (! visited_centroids.at(neigh_cell_id)){
-                    // Set IDs based on counter
-                    cell_halfedge->set_id(counter++);
-                    twin_halfedge->set_id(counter++);
+            // If neighbouring cell was not visited, its node needs an halfedge
+            if (old_neigh_cell_id != -1 or ! visited_centroids.at(neigh_cell_id)){
+                // Set IDs based on counter
+                cell_halfedge->set_id(counter++);
+                twin_halfedge->set_id(counter++);
 
-                    // Set halfedge to the cell centroid
-                    cell_node->set_halfedge(cell_halfedge);
-                    // Set halfedge to the neighbouring centroid
-                    twin_node->set_halfedge(twin_halfedge);
+                // Set halfedge to the cell centroid
+                cell_node->set_halfedge(cell_halfedge);
+                // Set halfedge to the neighbouring centroid
+                twin_node->set_halfedge(twin_halfedge);
 
-                    // Add node and twin to the halfedges
-                    cell_halfedge->set_node(cell_node);
-                    twin_halfedge->set_node(twin_node);
-                    cell_halfedge->set_twin(twin_halfedge);
-                    twin_halfedge->set_twin(cell_halfedge);
+                // Add node and twin to the halfedges
+                cell_halfedge->set_node(cell_node);
+                twin_halfedge->set_node(twin_node);
+                cell_halfedge->set_twin(twin_halfedge);
+                twin_halfedge->set_twin(cell_halfedge);
 
-                    // Add the halfedges (true because, being twins, cells for the two halfedges are different)
-                    dcel_.insert_edge(cell_halfedge, twin_halfedge, true);
+                // Add the halfedges (true because, being twins, cells for the two halfedges are different)
+                dcel_.insert_edge(cell_halfedge, twin_halfedge, true);
 
-                    // Update lookup
-                    cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
-                    twin_node->add_halfedge(cell_id, twin_halfedge);
-                }
+                // Update lookup
+                cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
+                twin_node->add_halfedge(cell_id, twin_halfedge);
+            }
 
-                // Else, only the cell centroid needs an halfedge
-                else{
-                    // Retrieve halfedge
-                    delete cell_halfedge;
-                    delete twin_halfedge;
-                    twin_halfedge = (twin_node->neighID2halfedge(cell_id));
-                    cell_halfedge = (twin_halfedge->twin());
+            // Else, only the cell centroid needs an halfedge
+            else{
+                // Retrieve halfedge
+                delete cell_halfedge;
+                delete twin_halfedge;
+                twin_halfedge = (twin_node->neighID2halfedge(cell_id));
+                cell_halfedge = (twin_halfedge->twin());
 
-                }
-              
-                // set the cell as visited
-                visited_centroids[cell_id] = true;
-                // visited_centroids[neigh_cell_id] = true;
+            }
+            
+            // set the cell as visited
+            visited_centroids[cell_id] = true;
+            // visited_centroids[neigh_cell_id] = true;
 
-                // Set prev for cell_halfedge and next twin_halfedge
-                if(! prev_was_minus_1){
-                    e2 = cell_halfedge;  
-                    if (count_existing_neigh != 0){
-                        e1->twin()->set_next(e2);
-                        e2->set_prev(e1->twin());
-                    }
-                    else{
-                        first_halfedge = cell_halfedge;
-                    }
-                }
-                else{
-                    if(count_existing_neigh == 0){
-                        first_halfedge = cell_halfedge;
-                    }
-                }
+            // Set prev for cell_halfedge and next twin_halfedge
+            // if(! prev_was_minus_1){
+            //     e2 = cell_halfedge;  
+            //     if (count_existing_neigh != 0){
+            //         e1->twin()->set_next(e2);
+            //         e2->set_prev(e1->twin());
+            //     }
+            //     else{
+            //         first_halfedge = cell_halfedge;
+            //     }
+            // }
+            // else{
+            //     if(count_existing_neigh == 0){
+            //         first_halfedge = cell_halfedge;
+            //     }
+            // }
 
-                prev_was_minus_1 = false;
-                e1 = cell_halfedge;
-                count_existing_neigh += 1;
-        }
+            e2 = cell_halfedge;  
+            if (count_existing_neigh != 0){
+                e1->twin()->set_next(e2);
+                e2->set_prev(e1->twin());
+            }
+            else{
+                first_halfedge = cell_halfedge;
+            }
+
+            // prev_was_minus_1 = false;
+            e1 = cell_halfedge;
+            count_existing_neigh += 1;
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     
     if (count_existing_neigh != 1)
