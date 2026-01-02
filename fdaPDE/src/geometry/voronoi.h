@@ -56,6 +56,8 @@ class Voronoi {
 
     // Number of faces in triangulations
     int n_mesh_faces = mesh.n_cells();
+    // Number of vertices in the mesh
+    int n_mesh_vertices = mesh.n_nodes();
 
     // Lookup
     std::vector<typename simplex_t::NodeType> centroid_lookup(n_mesh_faces);
@@ -65,6 +67,8 @@ class Voronoi {
     std::vector<bool> on_boundary(n_mesh_faces);
     // Old node ID : new node ID
     std::vector<int> old2new(n_mesh_faces);
+    // cell with halfedge
+    std::vector<int> cell2half(n_mesh_vertices);  // 0 for cell node e 1 for twin node
 
     // Loop to compute centroids
     int cur_id = 0;
@@ -182,9 +186,46 @@ class Voronoi {
                                     vec_2.begin(), vec_2.end(),
                                     std::back_inserter(common));
 
+                
                 // Assert that the common elements are two since they are adjacent cells
                 assert(common.size()==2);
 
+                // Associate the halfedges to the cells. IDEA: consideriamo le coordinare dei due centroidi e dei due vertici
+                // e assegniamo gli halfedges in senso antiorario
+                for(int i=0; i<common.size(); ++i){
+                    // find the element into the vector 
+                    auto it = std::find(vec_2.begin(), vec_2.end(), common[i]);
+                    // check 
+                    assert(it != vec_2.end());
+                    // find the corrensponding index
+                    int local_idx = std::distance(vec_2.begin(), it);
+                    typename simplex_t::NodeType ver_coords = tria.node(local_idx);
+
+                    // orientation check
+                    int new_neigh_id = old2new.at(old_neigh_cell_id);
+                    typename simplex_t::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
+                    // create segments around the vertex
+                    typename simplex_t::NodeType u = centroid - ver_coords;
+                    typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
+                    // cross product
+                    double cross = u(0)*v(1)-u(1)*v(0);
+                    int new_ids = old2new.at(common[i]);
+                    cell_t curr_cell(new_ids);
+                    // Add the new cell to the list if it is not yet added 
+                    if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+                        cells_.push_back(curr_cell);
+                    }
+                    if(cross<0){
+                        cell2half[new_ids] = 0;
+                    }
+                    else if(cross > 0){
+                        cell2half[new_ids] = 1;
+                    }
+                    else{
+                        std::cout<<"Undetermined: cross product is zero"<<std::endl;
+                    }
+                }
+                
                 // Take the different id between the two
                 std::vector<int> tmp_diff;
 
@@ -198,15 +239,6 @@ class Voronoi {
                 // Assert that the different element is one since they are adjacent cells
                 assert(tmp_diff.size()==1);
                 diff_id = tmp_diff[0];
-
-                // Add the new cell to the list if it is not yet added 
-                for(int ids : common){
-                    int new_ids = old2new.at(ids);
-                    cell_t curr_cell(new_ids);
-                    if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
-                        cells_.push_back(curr_cell);
-                    }
-                }
                 
             }
 
@@ -235,7 +267,7 @@ class Voronoi {
                 // Create twin halfedge (neigh -> centroid)
                 typename dcel_t::halfedge_t* twin_halfedge = new dcel_t::halfedge_t();
 
-                // // Set IDs based on counter
+                // Set IDs based on counter
                 // cell_halfedge.set_id(counter++);
                 // twin_halfedge.set_id(counter++);
 
@@ -335,7 +367,7 @@ class Voronoi {
     //    -- identificare le celle unbounded
 
     int n_cells = dcel_.n_cells();
-    std::list<cell_t> cells_(n_cells);
+    //std::list<cell_t> cells_(n_cells);
 
     // for (auto it = dcel_.cells_begin(); it != dcel_.cells_end(); ++it){
     //     cell_t whatever;
@@ -346,6 +378,10 @@ class Voronoi {
     // }
 
     std::cout << "\nFinished constructor" << std::endl;
+
+    for(int i=0; i<cell2half.size(); ++i){
+        std::cout<<cell2half[i]<<std::endl;
+    }
 
     }
 
