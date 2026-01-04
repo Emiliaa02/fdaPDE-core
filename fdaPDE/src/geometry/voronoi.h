@@ -103,6 +103,7 @@ class Voronoi {
     on_boundary[infty_id] = false;
 
     typename dcel_t::node_t infty_node(infty_id, false, centroid_infty);
+    dcel_.insert_node(infty_node);
 
 // ==========================================================================================================================================
 
@@ -432,10 +433,6 @@ class Voronoi {
     // }
 
     std::cout << "\nFinished constructor" << std::endl;
-
-    for(int i=0; i<cell2half.size(); ++i){
-        std::cout<<cell2half[i]<<std::endl;
-    }
 
     }
 
