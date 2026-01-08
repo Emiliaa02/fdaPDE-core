@@ -77,21 +77,43 @@ class Voronoi {
         // Retrieve ID 
         int cell_id = it->id();
 
-        // New ID
-        old2new[cell_id] = cur_id;
-        
         // for this, take a look at simplex.h (simplex_t::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
         typename simplex_t::NodeType centroid = it->circumcenter();
 
-        // Insert inside the DCEL the node, without the halfedge
-        typename dcel_t::node_t cell_node(cur_id, false, centroid);
-        dcel_.insert_node(cell_node);
+        // Check that the centroid is not already present
+        bool already_present = false;
+        int same_centroid_idx;
+        for (auto ii = 0; ii < centroid_lookup.size(); ++ii){
+            float thresh = 0.000000001;
+            if (std::abs(centroid_lookup[ii](0)-centroid(0))<thresh and std::abs(centroid_lookup[ii](1)-centroid(1))<thresh){
+                already_present = true;
+                same_centroid_idx = ii;
+                break;
+            }
+        }
 
-        // Add to lookup
-        centroid_lookup[cur_id] = centroid;
-        visited_centroids[cur_id] = false; 
-        on_boundary[cur_id] = false;
-        cur_id += 1;
+        if (!already_present){
+
+            // New ID
+            old2new[cell_id] = cur_id;
+
+            // Insert inside the DCEL the node, without the halfedge
+            typename dcel_t::node_t cell_node(cur_id, false, centroid);
+            dcel_.insert_node(cell_node);
+
+            // Add to lookup
+            centroid_lookup[cur_id] = centroid;
+            visited_centroids[cur_id] = false; 
+            on_boundary[cur_id] = false;
+
+            cur_id += 1;
+        }
+        else{
+
+            // New ID
+            old2new[cell_id] = same_centroid_idx;
+        }
+
     }
 
     int infty_id = cur_id;
@@ -104,6 +126,11 @@ class Voronoi {
 
     typename dcel_t::node_t infty_node(infty_id, false, centroid_infty);
     dcel_.insert_node(infty_node);
+
+    // Shrink the vectors capacity if less elements than estimated were used
+    centroid_lookup.shrink_to_fit();
+    visited_centroids.shrink_to_fit();
+    on_boundary.shrink_to_fit();
 
 // ==========================================================================================================================================
 
@@ -177,6 +204,13 @@ class Voronoi {
         for (auto old_neigh_cell_id : cell_neighbours) {
 
             if(old_neigh_cell_id != -1){
+                int new_neigh_id = old2new.at(old_neigh_cell_id);
+                if (new_neigh_id == cell_id){
+                    continue;
+                }
+            }
+
+            if(old_neigh_cell_id != -1){
 
                 // Retrieve the triangle in the mesh using the old id
                 triangle_t tria(old_neigh_cell_id, &mesh);  
@@ -234,7 +268,11 @@ class Voronoi {
                     }
                     else{
                         std::cout<<"Undetermined: cross product is zero"<<std::endl;
+                        std::cout << "centroid coordinates" << centroid << std::endl;
+                        std::cout << "neigh_centroid_coords coordinates" << neigh_centroid_coords << std::endl;
+                        std::cout << "Vertex coordinates" << ver_coords << std::endl;
                     }
+
                 }
                 
                 // Take the different id between the two
