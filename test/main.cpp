@@ -84,6 +84,9 @@ Voronoi<2, 2> voronoi_obj(mesh);
 // for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
 //   std::cout << it->measure() << std::endl;
 // }
+auto it = voronoi_obj.cells_begin();
+std::cout<<it->halfedge()->id()<<std::endl;
+
 
 int n_nodes = voronoi_obj.n_nodes();
 int n_edges = voronoi_obj.n_edges();
@@ -92,7 +95,7 @@ int n_cells = voronoi_obj.n_cells();
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
 
-voronoi_obj.export_to_json("plots/data/voronoi_quasi_circle.json");
+// voronoi_obj.export_to_json("plots/data/voronoi_quasi_circle.json");
 
 return 0;
 }
