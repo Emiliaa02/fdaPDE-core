@@ -517,6 +517,9 @@ class Voronoi {
     bool unbounded_; // cella unbounded o no?
 
     double measure(){
+        if(is_unbounded()){
+            return std::numeric_limits<double>::infinity();
+        }
         std::vector<typename dcel_t::node_t*> points_list = cell_nodes();
         Eigen::Matrix<double, Eigen::Dynamic, embed_dim> points_coords(points_list.size(), embed_dim);
         for(int i=0; i<points_list.size(); ++i){
