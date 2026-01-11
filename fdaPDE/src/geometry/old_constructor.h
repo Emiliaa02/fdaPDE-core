@@ -248,7 +248,7 @@ class Voronoi {
 
 
             // If neighbouring cell was not visited, its node needs an halfedge
-            if (!visited_centroids.at(neigh_cell_id)){
+            if (old_neigh_cell_id != -1 or ! visited_centroids.at(neigh_cell_id)){
                 // Set IDs based on counter
                 cell_halfedge->set_id(counter++);
                 twin_halfedge->set_id(counter++);
@@ -272,7 +272,7 @@ class Voronoi {
                 twin_node->add_halfedge(cell_id, twin_halfedge);
             }
 
-            // Else, only retrieve them
+            // Else, only the cell centroid needs an halfedge
             else{
                 // Retrieve halfedge
                 delete cell_halfedge;
@@ -281,23 +281,8 @@ class Voronoi {
                 cell_halfedge = (twin_halfedge->twin());
 
             }
-        
-            // set the cell as visited
-            visited_centroids[cell_id] = true;
-
-            e2 = cell_halfedge;  
-            if (count_existing_neigh != 0){
-                e1->twin()->set_next(e2);
-                e2->set_prev(e1->twin());
-            }
-            else{
-                first_halfedge = cell_halfedge;
-            }
-
-            // prev_was_minus_1 = false;
-            e1 = cell_halfedge;
-            count_existing_neigh += 1;
-                        
+            
+            
             if(old_neigh_cell_id != -1){
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,28 +332,28 @@ class Voronoi {
                     int new_ids = old2new.at(common[i]);
                     cell_t curr_cell(new_ids);
                     // Add the new cell to the list if it is not yet added 
-                    if (std::find(cells_.begin(), cells_.end(), &curr_cell) == cells_.end()){
+                    if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
                         if(cross < 0){
                             cell2half[new_ids] = 0;
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(twin_halfedge);
-                            cells_.push_back(&curr_cell);
+                            cells_.push_back(curr_cell);
                         }
                         else if(cross > 0){
                             cell2half[new_ids] = 1;
                             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(cell_halfedge);
-                            cells_.push_back(&curr_cell);
+                            cells_.push_back(curr_cell);
                         }
                         else{
                             std::cout<<"Undetermined: cross product is zero"<<std::endl;
-                            std::cout << "centroid coordinates" << centroid << std::endl;
-                            std::cout << "neigh_centroid_coords coordinates" << neigh_centroid_coords << std::endl;
-                            std::cout << "Vertex coordinates" << ver_coords << std::endl; 
+                            // std::cout << "centroid coordinates" << centroid << std::endl;
+                            // std::cout << "neigh_centroid_coords coordinates" << neigh_centroid_coords << std::endl;
+                            // std::cout << "Vertex coordinates" << ver_coords << std::endl;
                         }
                         }
                 }
-
+                
                 // Take the different id between the two
                 std::vector<int> tmp_diff;
 
@@ -382,29 +367,79 @@ class Voronoi {
                 // Assert that the different element is one since they are adjacent cells
                 assert(tmp_diff.size()==1);
                 diff_id = tmp_diff[0];
-                
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                
             }
+
+            // set the cell as visited
+            visited_centroids[cell_id] = true;
+            // visited_centroids[neigh_cell_id] = true;
+
+            // Set prev for cell_halfedge and next twin_halfedge
+            // if(! prev_was_minus_1){
+            //     e2 = cell_halfedge;  
+            //     if (count_existing_neigh != 0){
+            //         e1->twin()->set_next(e2);
+            //         e2->set_prev(e1->twin());
+            //     }
+            //     else{
+            //         first_halfedge = cell_halfedge;
+            //     }
+            // }
+            // else{
+            //     if(count_existing_neigh == 0){
+            //         first_halfedge = cell_halfedge;
+            //     }
+            // }
+
+            e2 = cell_halfedge;  
+            if (count_existing_neigh != 0){
+                e1->twin()->set_next(e2);
+                e2->set_prev(e1->twin());
+            }
+            else{
+                first_halfedge = cell_halfedge;
+            }
+
+            // prev_was_minus_1 = false;
+            e1 = cell_halfedge;
+            count_existing_neigh += 1;
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     
     if (count_existing_neigh != 1)
     {
-    e2->twin()->set_next(first_halfedge);
-    first_halfedge->set_prev(e2->twin());
-    }
+    first_halfedge->twin()->set_next(e2);
+    e2->set_prev(first_halfedge->twin());
 
+    first_halfedge->set_prev(e2->twin());
+    e2->twin()->set_next(first_halfedge);
+    }
 
     if(count_existing_neigh == 1){
         int new_diff_id = old2new.at(diff_id);
         cell_t curr_cell_diff(new_diff_id);
-        if (std::find(cells_.begin(), cells_.end(), &curr_cell_diff) == cells_.end()){
-            cells_.push_back(&curr_cell_diff);
+        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
+            cells_.push_back(curr_cell_diff);
         }
     }
 
     }
+
+
 
 
 // ==========================================================================================================================================
@@ -493,18 +528,18 @@ class Voronoi {
     std::vector<typename dcel_t::halfedge_t*> cell_edges() const {
         std::vector<typename dcel_t::halfedge_t*> cell_edges;
         typename dcel_t::halfedge_t* start = this->halfedge();
-        // for (typename dcel_t::halfedge_t::circulator it(start); it; ++it) {
-        //     cell_edges.push_back(&(*it));
-        // }
+        for (typename dcel_t::halfedge_t::circulator it(start); it; ++it) {
+            cell_edges.push_back(&(*it));
+        }
 
-        typename dcel_t::halfedge_t* he = start;
-
-        do {
-            cell_edges.push_back(he);
-            he = he->next();
-        } while(he != start);
-        
         return cell_edges;
+
+        // dcel_t::halfedge_t* he = start;
+
+        // do {
+        //     cell_edges.push_back(he);
+        //     he = he->next();
+        // } while(he != start)
     }
 
     void set_unbounded() {unbounded_ = true; }
@@ -582,8 +617,8 @@ class Voronoi {
     
 
     // iterators
-    using cell_iterator = std::list<cell_t*>::iterator;
-    using const_cell_iterator = std::list<cell_t*>::const_iterator;
+    using cell_iterator = std::list<cell_t>::iterator;
+    using const_cell_iterator = std::list<cell_t>::const_iterator;
 
     cell_iterator cells_begin() { return cells_.begin(); }
     cell_iterator cells_end() { return cells_.end(); }
@@ -629,7 +664,7 @@ class Voronoi {
    
 
     // List of cells
-    std::list<cell_t*> cells_;
+    std::list<cell_t> cells_;
 };
 }
 
