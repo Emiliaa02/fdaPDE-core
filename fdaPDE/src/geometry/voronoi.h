@@ -69,6 +69,8 @@ class Voronoi {
     std::vector<int> old2new(n_mesh_faces);
     // cell with halfedge
     std::vector<int> cell2half(n_mesh_vertices);  // 0 for cell node e 1 for twin node
+    // counter to set the IDs
+    int counter = 0;
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,8 +162,6 @@ class Voronoi {
 
         // Get adjajent cells
         Eigen::Matrix<int, Eigen::Dynamic, 1> cell_neighbours = it->neighbors();
-        
-        int counter = 0;
 
         // Keep the previous and the first halfedge
         // typename dcel_t::halfedge_t* passed_halfedge=nullptr;
@@ -347,18 +347,18 @@ class Voronoi {
                     int new_ids = old2new.at(common[i]);
                     cell_t curr_cell(new_ids);
                     // Add the new cell to the list if it is not yet added 
-                    if (std::find(cells_.begin(), cells_.end(), &curr_cell) == cells_.end()){
+                    if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
                         if(cross < 0){
                             cell2half[new_ids] = 0;
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(twin_halfedge);
-                            cells_.push_back(&curr_cell);
+                            cells_.push_back(curr_cell);
                         }
                         else if(cross > 0){
                             cell2half[new_ids] = 1;
                             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(cell_halfedge);
-                            cells_.push_back(&curr_cell);
+                            cells_.push_back(curr_cell);
                         }
                         else{
                             std::cout<<"Undetermined: cross product is zero"<<std::endl;
@@ -399,8 +399,8 @@ class Voronoi {
     if(count_existing_neigh == 1){
         int new_diff_id = old2new.at(diff_id);
         cell_t curr_cell_diff(new_diff_id);
-        if (std::find(cells_.begin(), cells_.end(), &curr_cell_diff) == cells_.end()){
-            cells_.push_back(&curr_cell_diff);
+        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
+            cells_.push_back(curr_cell_diff);
         }
     }
 
@@ -496,8 +496,9 @@ class Voronoi {
         // for (typename dcel_t::halfedge_t::circulator it(start); it; ++it) {
         //     cell_edges.push_back(&(*it));
         // }
-
         typename dcel_t::halfedge_t* he = start;
+
+        if (!start) return cell_edges;
 
         do {
             cell_edges.push_back(he);
@@ -585,8 +586,8 @@ class Voronoi {
     
 
     // iterators
-    using cell_iterator = std::list<cell_t*>::iterator;
-    using const_cell_iterator = std::list<cell_t*>::const_iterator;
+    using cell_iterator = std::list<cell_t>::iterator;
+    using const_cell_iterator = std::list<cell_t>::const_iterator;
 
     cell_iterator cells_begin() { return cells_.begin(); }
     cell_iterator cells_end() { return cells_.end(); }
@@ -632,7 +633,7 @@ class Voronoi {
    
 
     // List of cells
-    std::list<cell_t*> cells_;
+    std::list<cell_t> cells_;
 };
 }
 
