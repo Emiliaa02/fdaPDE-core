@@ -18,6 +18,7 @@ class Voronoi {
     using triangulation_t = Triangulation<local_dim, embed_dim>;
     using triangle_t = Triangle<triangulation_t>;
     // using myDelaunay = Delaunay<local_dim, embed_dim>;
+    using cell_t = dcel_t::cell_t;
     
     public:
 
@@ -476,59 +477,59 @@ class Voronoi {
 
 
 
-    // struttura per codificare una cella di voronoi
-    struct cell_t : public dcel_t::cell_t{
+    // // struttura per codificare una cella di voronoi
+    // struct cell_t : public dcel_t::cell_t{
 
-    // accedere ai vertici della cella
-    std::vector<typename dcel_t::node_t*> cell_nodes() const {
-        std::vector<typename dcel_t::node_t*> cell_nodes;
-        std::vector<typename dcel_t::halfedge_t*> edges = cell_edges();
-        for(auto it = edges.cbegin(); it != edges.cend(); ++it) {
-            cell_nodes.push_back((*it)->node());
-        }
+    // // accedere ai vertici della cella
+    // std::vector<typename dcel_t::node_t*> cell_nodes() const {
+    //     std::vector<typename dcel_t::node_t*> cell_nodes;
+    //     std::vector<typename dcel_t::halfedge_t*> edges = cell_edges();
+    //     for(auto it = edges.cbegin(); it != edges.cend(); ++it) {
+    //         cell_nodes.push_back((*it)->node());
+    //     }
 
-        return cell_nodes;
-    }   
-    // accedere agli edge della cella
-    std::vector<typename dcel_t::halfedge_t*> cell_edges() const {
-        std::vector<typename dcel_t::halfedge_t*> cell_edges;
-        typename dcel_t::halfedge_t* start = this->halfedge();
-        // for (typename dcel_t::halfedge_t::circulator it(start); it; ++it) {
-        //     cell_edges.push_back(&(*it));
-        // }
-        typename dcel_t::halfedge_t* he = start;
+    //     return cell_nodes;
+    // }   
+    // // accedere agli edge della cella
+    // std::vector<typename dcel_t::halfedge_t*> cell_edges() const {
+    //     std::vector<typename dcel_t::halfedge_t*> cell_edges;
+    //     typename dcel_t::halfedge_t* start = this->halfedge();
+    //     // for (typename dcel_t::halfedge_t::circulator it(start); it; ++it) {
+    //     //     cell_edges.push_back(&(*it));
+    //     // }
+    //     typename dcel_t::halfedge_t* he = start;
 
-        if (!start) return cell_edges;
+    //     if (!start) return cell_edges;
 
-        do {
-            cell_edges.push_back(he);
-            he = he->next();
-        } while(he != start);
+    //     do {
+    //         cell_edges.push_back(he);
+    //         he = he->next();
+    //     } while(he != start);
         
-        return cell_edges;
-    }
+    //     return cell_edges;
+    // }
 
-    void set_unbounded() {unbounded_ = true; }
+    // void set_unbounded() {unbounded_ = true; }
 
-    bool is_unbounded() const { return unbounded_; }
+    // bool is_unbounded() const { return unbounded_; }
 
-    void set_cell(typename dcel_t::cell_t* cell_ptr){cell_ = cell_ptr;}
+    // void set_cell(typename dcel_t::cell_t* cell_ptr){cell_ = cell_ptr;}
 
-    typename dcel_t::cell_t* cell_;
-    bool unbounded_; // cella unbounded o no?
+    // typename dcel_t::cell_t* cell_;
+    // bool unbounded_; // cella unbounded o no?
 
-    double measure(){
-        if(is_unbounded()){
-            return std::numeric_limits<double>::infinity();
-        }
-        std::vector<typename dcel_t::node_t*> points_list = cell_nodes();
-        Eigen::Matrix<double, Eigen::Dynamic, embed_dim> points_coords(points_list.size(), embed_dim);
-        for(int i=0; i<points_list.size(); ++i){
-            points_coords.row(i) = points_list[i] -> coords();
-        }
-        return internals::signed_measure_2d_polygon(points_coords);
-    }
-    };
+    // double measure(){
+    //     if(is_unbounded()){
+    //         return std::numeric_limits<double>::infinity();
+    //     }
+    //     std::vector<typename dcel_t::node_t*> points_list = cell_nodes();
+    //     Eigen::Matrix<double, Eigen::Dynamic, embed_dim> points_coords(points_list.size(), embed_dim);
+    //     for(int i=0; i<points_list.size(); ++i){
+    //         points_coords.row(i) = points_list[i] -> coords();
+    //     }
+    //     return internals::signed_measure_2d_polygon(points_coords);
+    // }
+    // };
 
 
 

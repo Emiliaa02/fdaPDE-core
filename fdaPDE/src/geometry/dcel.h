@@ -196,6 +196,50 @@ template <int LocalDim, int EmbedDim> class DCEL {
          std::list<node_t*>& conflicting_points() const{ return conflicting_points_; }
          std::list<node_t*>& conflicting_points() { return conflicting_points_; }
          void clear_conflicts() { conflicting_points_.clear(); }
+
+        // access cell edges
+        std::vector<halfedge_t*> cell_edges() const {
+            std::vector<halfedge_t*> cell_edges;
+            halfedge_t* start = this->halfedge();
+            halfedge_t* he = start;
+
+            if (!start) return cell_edges;
+
+            do {
+                cell_edges.push_back(he);
+                he = he->next();
+            } while(he != start);
+            
+            return cell_edges;
+        }
+
+        // access cell nodes
+        std::vector<node_t*> cell_nodes() const {
+            std::vector<node_t*> cell_nodes;
+            std::vector<halfedge_t*> edges = cell_edges();
+            for(auto it = edges.cbegin(); it != edges.cend(); ++it) {
+                cell_nodes.push_back((*it)->node());
+            }
+
+            return cell_nodes;
+        }   
+
+        void set_unbounded() {unbounded_ = true; }
+
+        bool is_unbounded() const { return unbounded_; }
+
+        // Cell measure
+        double measure(){
+            if(is_unbounded()){
+                return std::numeric_limits<double>::infinity();
+            }
+            std::vector<node_t*> points_list = cell_nodes();
+            Eigen::Matrix<double, Eigen::Dynamic, embed_dim> points_coords(points_list.size(), embed_dim);
+            for(int i=0; i<points_list.size(); ++i){
+                points_coords.row(i) = points_list[i] -> coords();
+            }
+            return internals::signed_measure_2d_polygon(points_coords);
+        }
       
  
         private:
@@ -203,6 +247,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
          halfedge_t* h_;
          // code needed for conflict graph algorithm in delaunay.h
          std::list<node_t*> conflicting_points_;  
+
+         // Is the cell unbounded?
+         bool unbounded_; 
      };
 
 
