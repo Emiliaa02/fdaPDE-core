@@ -90,8 +90,13 @@ template <int LocalDim, int EmbedDim> class DCEL {
          void set_boundary(bool boundary) { boundary_ = boundary; }
          node_t* next() const { return halfedge_->next()->node(); }
          node_t* prev() const { return halfedge_->prev()->node(); }
-         halfedge_t* neighID2halfedge(int id) const { 
-            return halfedges_lookup_.at(id); 
+         halfedge_t* neighID2halfedge(int id) const
+        {
+            auto it = halfedges_lookup_.find(id);
+            if (it == halfedges_lookup_.end())
+                return nullptr;          // key not found
+
+            return it->second;          // key found
         }
  
          // code for conflict graph algorithm in delaunay.h
@@ -203,12 +208,13 @@ template <int LocalDim, int EmbedDim> class DCEL {
             halfedge_t* start = this->halfedge();
             halfedge_t* he = start;
 
-            if (!start) return cell_edges;
+            if (!start or !start->next()) return cell_edges;
 
+            // Non so se con questo codice vada bene: non entra anche se start->next()==nullptr?
             do {
                 cell_edges.push_back(he);
                 he = he->next();
-            } while(he != start);
+            } while(he != start and he != nullptr and he->next()!=nullptr);
             
             return cell_edges;
         }
@@ -230,7 +236,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         // Cell measure
         double measure(){
-            if(is_unbounded()){
+            if(this -> is_unbounded()){
                 return std::numeric_limits<double>::infinity();
             }
             std::vector<node_t*> points_list = cell_nodes();
@@ -238,7 +244,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             for(int i=0; i<points_list.size(); ++i){
                 points_coords.row(i) = points_list[i] -> coords();
             }
-            return internals::signed_measure_2d_polygon(points_coords);
+            return std::abs(internals::signed_measure_2d_polygon(points_coords));
         }
       
  
@@ -249,7 +255,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
          std::list<node_t*> conflicting_points_;  
 
          // Is the cell unbounded?
-         bool unbounded_; 
+         bool unbounded_ = false; 
      };
 
 

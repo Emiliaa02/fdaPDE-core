@@ -152,7 +152,7 @@ class Voronoi {
 
         // Retrieve new ID
         int cell_id = old2new.at(old_cell_id);
-        
+
         // check if the cell is on the boundary
         if (it->on_boundary()){
             on_boundary[cell_id] = true;
@@ -240,7 +240,6 @@ class Voronoi {
             else{
 
                 // prev_was_minus_1 = true;
-
                 // It is the infinity node
                 neigh_cell_id = infty_id;
 
@@ -249,7 +248,8 @@ class Voronoi {
 
 
             // If neighbouring cell was not visited, its node needs an halfedge
-            if (!visited_centroids.at(neigh_cell_id)){
+            // if (!visited_centroids.at(neigh_cell_id))
+            if (twin_node->neighID2halfedge(cell_id)==nullptr){
                 // Set IDs based on counter
                 cell_halfedge->set_id(counter++);
                 twin_halfedge->set_id(counter++);
@@ -389,7 +389,6 @@ class Voronoi {
             }
     }
 
-    
     if (count_existing_neigh != 1)
     {
     e2->twin()->set_next(first_halfedge);
@@ -402,10 +401,13 @@ class Voronoi {
         cell_t curr_cell_diff(new_diff_id);
         if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
             cells_.push_back(curr_cell_diff);
+            std::cout << "Setting unbounded" << std::endl;
+            curr_cell_diff.set_unbounded();
         }
     }
 
     }
+
 
 
 // ==========================================================================================================================================
