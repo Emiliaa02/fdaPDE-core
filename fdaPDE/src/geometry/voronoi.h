@@ -68,15 +68,18 @@ class Voronoi {
     std::vector<bool> on_boundary(n_mesh_faces+1);
     // Old node ID : new node ID
     std::vector<int> old2new(n_mesh_faces);
-    // cell with halfedge
-    std::vector<int> cell2half(n_mesh_vertices);  // 0 for cell node e 1 for twin node
     // counter to set the IDs
     int counter = 0;
+    // Neighbors lookup
+    std::vector<std::vector<int>> node_neighbors_lookup(n_mesh_faces);
+    // Same centroids lookup
+    std::vector<int> first_id_lookup(n_mesh_faces);
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Loop to compute centroids
     int cur_id = 0;
+    int first_id = 0;
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
         // Retrieve ID 
@@ -84,6 +87,9 @@ class Voronoi {
 
         // for this, take a look at simplex.h (simplex_t::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
         typename simplex_t::NodeType centroid = it->circumcenter();
+
+        Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = it->neighbors();;
+        std::vector<int> neigh_vec = std::vector(neigh.data(), neigh.data() + neigh.size());
 
         // Check that the centroid is not already present
         bool already_present = false;
@@ -99,6 +105,9 @@ class Voronoi {
 
         if (!already_present){
 
+            // First ID for the current centroid
+            first_id_lookup[cur_id] = cell_id;
+
             // New ID
             old2new[cell_id] = cur_id;
 
@@ -110,6 +119,7 @@ class Voronoi {
             centroid_lookup[cur_id] = centroid;
             visited_centroids[cur_id] = false; 
             on_boundary[cur_id] = false;
+            node_neighbors_lookup[cur_id] = neigh_vec;
 
             cur_id += 1;
         }
@@ -117,6 +127,9 @@ class Voronoi {
 
             // New ID
             old2new[cell_id] = same_centroid_idx;
+            node_neighbors_lookup[same_centroid_idx].insert(node_neighbors_lookup[same_centroid_idx].end(), neigh_vec.begin(), neigh_vec.end());
+            node_neighbors_lookup[same_centroid_idx].erase(std::remove(node_neighbors_lookup[same_centroid_idx].begin(), node_neighbors_lookup[same_centroid_idx].end(), cell_id),node_neighbors_lookup[same_centroid_idx].end());
+            node_neighbors_lookup[same_centroid_idx].erase(std::remove(node_neighbors_lookup[same_centroid_idx].begin(), node_neighbors_lookup[same_centroid_idx].end(), first_id_lookup[same_centroid_idx]),node_neighbors_lookup[same_centroid_idx].end());
         }
 
     }
@@ -136,6 +149,8 @@ class Voronoi {
     centroid_lookup.shrink_to_fit();
     visited_centroids.shrink_to_fit();
     on_boundary.shrink_to_fit();
+    first_id_lookup.shrink_to_fit();
+    node_neighbors_lookup.shrink_to_fit();
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -161,8 +176,8 @@ class Voronoi {
         // Retrieve circumcenter
         typename simplex_t::NodeType centroid = centroid_lookup.at(cell_id);
 
-        // Get adjajent cells
-        Eigen::Matrix<int, Eigen::Dynamic, 1> cell_neighbours = it->neighbors();
+        // // Get adjajent cells
+        // Eigen::Matrix<int, Eigen::Dynamic, 1> cell_neighbours = it->neighbors();
 
         // Keep the previous and the first halfedge
         // typename dcel_t::halfedge_t* passed_halfedge=nullptr;
@@ -172,41 +187,12 @@ class Voronoi {
         typename dcel_t::halfedge_t* e1 = nullptr;
         typename dcel_t::halfedge_t* e2 = nullptr;
 
-        // Make the orientation consistent
-        // double determinant = 1;
-        // std::vector<typename simplex_t::NodeType> nodes_cell;    
-        // bool compute_det = true;
-        // for (auto old_neigh_cell_id : cell_neighbours){
-            
-        //     if(old_neigh_cell_id == -1){
-        //         compute_det = false;
-        //         break;
-        //     }
-
-        //     int new_neigh_id = old2new.at(old_neigh_cell_id);
-
-        //     typename simplex_t::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
-        //     typename simplex_t::NodeType centered_neigh_coords;
-        //     for(int i = 0; i < embed_dim; i++){
-        //         centered_neigh_coords(i) = neigh_centroid_coords(i) - centroid(i);
-        //     }
-        //     nodes_cell.push_back(centered_neigh_coords);
-        // }
-        // if(compute_det){
-        //     determinant = (nodes_cell[1](0) - nodes_cell[0](0))*(nodes_cell[2](1) - nodes_cell[0](1)) - (nodes_cell[1](1) - nodes_cell[0](1))*(nodes_cell[2](0) - nodes_cell[0](0));
-        //     if(determinant < 0){
-        //         int tmp = cell_neighbours(0);
-        //         cell_neighbours(0) = cell_neighbours(1);
-        //         cell_neighbours(1) = tmp;
-        //     }
-        // }
-
         bool prev_was_minus_1 = false;
         int count_existing_neigh = 0;
         int diff_id = 0;
         
         // Loop over neighbouring cells (ASSUMING THEY ARE LOOPED IN CLOCKWISE ORDER)
-        for (auto old_neigh_cell_id : cell_neighbours) {
+        for (auto old_neigh_cell_id : node_neighbors_lookup.at(cell_id)) {
 
             int neigh_cell_id;
 
@@ -350,13 +336,11 @@ class Voronoi {
                     // Add the new cell to the list if it is not yet added 
                     if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
                         if(cross < 0){
-                            cell2half[new_ids] = 0;
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(twin_halfedge);
                             cells_.push_back(curr_cell);
                         }
                         else if(cross > 0){
-                            cell2half[new_ids] = 1;
                             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(cell_halfedge);
                             cells_.push_back(curr_cell);
