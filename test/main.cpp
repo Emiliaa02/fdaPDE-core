@@ -81,11 +81,11 @@ Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_
 Voronoi<2, 2> voronoi_obj(mesh);
 
 // fate operazioni...
-// int i = 0;
-// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-//   std::cout << it->measure() << std::endl;
-//   i += 1;
-// }
+int i = 0;
+for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+  std::cout << it->measure() << std::endl;
+  i += 1;
+}
 // std::cout << "Printed area of " << i << " cells" << std::endl;
 
 
