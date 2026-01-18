@@ -159,6 +159,8 @@ class Voronoi {
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
+        std::map<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
+
         // Retrieve the IDs of the vertices of the current cell
         Eigen::Matrix<int, Dynamic, 1> ids_node = it->node_ids();
 
@@ -257,6 +259,9 @@ class Voronoi {
                 // Update lookup
                 cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
                 twin_node->add_halfedge(cell_id, twin_halfedge);
+
+                vertexes2halfedge[std::make_pair<int, int>(cell_node->id(), twin_node->id())] = cell_halfedge;
+                vertexes2halfedge[std::make_pair<int, int>(twin_node->id(), cell_node->id())] = twin_halfedge;
             }
 
             // Else, only retrieve them
@@ -285,7 +290,115 @@ class Voronoi {
             e1 = cell_halfedge;
             count_existing_neigh += 1;
                         
-            if(old_neigh_cell_id != -1){
+            // if(old_neigh_cell_id != -1){
+
+            //     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            //     // Retrieve the triangle in the mesh using the old id
+            //     // triangle_t tria(old_neigh_cell_id, &mesh);  
+            //     // auto ids_neigh_node = tria.node_ids();
+
+            //     // // Find the different id between this vertices and the cell ones
+            //     // std::vector<int> vec_1(ids_node.data(), ids_node.data()+ids_node.size());
+            //     // std::vector<int> vec_2(ids_neigh_node.data(), ids_neigh_node.data()+ids_neigh_node.size());
+
+            //     // // Sort the vectors
+            //     // std::sort(vec_1.begin(), vec_1.end());
+            //     // std::sort(vec_2.begin(), vec_2.end());
+
+            //     // std::vector<int> common;
+
+            //     // // Take the common elements between the two
+            //     // std::set_intersection(vec_1.begin(), vec_1.end(),
+            //     //                     vec_2.begin(), vec_2.end(),
+            //     //                     std::back_inserter(common));
+
+                
+            //     // // Assert that the common elements are two since they are adjacent cells
+            //     // assert(common.size()==2);
+
+            //     // Associate the halfedges to the cells. IDEA: consideriamo le coordinare dei due centroidi e dei due vertici
+            //     // e assegniamo gli halfedges in senso antiorario
+            //     // for(int i=0; i<common.size(); ++i){
+            //     //     // find the element into the vector 
+            //     //     auto it = std::find(vec_2.begin(), vec_2.end(), common[i]);
+            //     //     // check 
+            //     //     assert(it != vec_2.end());
+            //     //     // find the corrensponding index
+            //     //     int local_idx = std::distance(vec_2.begin(), it);
+            //     //     typename simplex_t::NodeType ver_coords = tria.node(local_idx);
+
+            //     //     // orientation check
+            //     //     int new_neigh_id = old2new.at(old_neigh_cell_id);
+            //     //     typename simplex_t::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
+            //     //     // create segments around the vertex
+            //     //     typename simplex_t::NodeType u = centroid - ver_coords;
+            //     //     typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
+            //     //     // cross product
+            //     //     double cross = u(0)*v(1)-u(1)*v(0);
+            //     //     int new_ids = old2new.at(common[i]);
+            //     //     cell_t curr_cell(new_ids);
+            //     //     // Add the new cell to the list if it is not yet added 
+            //     //     if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+            //     //         if(cross < 0){
+            //     //             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
+            //     //             curr_cell.set_halfedge(twin_halfedge);
+            //     //             cells_.push_back(curr_cell);
+            //     //         }
+            //     //         else if(cross > 0){
+            //     //             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
+            //     //             curr_cell.set_halfedge(cell_halfedge);
+            //     //             cells_.push_back(curr_cell);
+            //     //         }
+            //     //         else{
+            //     //             std::cout<<"Undetermined: cross product is zero"<<std::endl;
+            //     //             std::cout << "centroid coordinates" << centroid << std::endl;
+            //     //             std::cout << "neigh_centroid_coords coordinates" << neigh_centroid_coords << std::endl;
+            //     //             std::cout << "Vertex coordinates" << ver_coords << std::endl; 
+            //     //         }
+            //     //         }
+            //     // }
+
+            //     // // Take the different id between the two
+            //     // std::vector<int> tmp_diff;
+
+            //     // // Element that is in vec_1 but not in vec_2
+            //     // std::set_difference(
+            //     //     vec_1.begin(), vec_1.end(),
+            //     //     vec_2.begin(), vec_2.end(),
+            //     //     std::back_inserter(tmp_diff)
+            //     // );
+
+            //     // // Assert that the different element is one since they are adjacent cells
+            //     // assert(tmp_diff.size()==1);
+            //     // diff_id = tmp_diff[0];
+                
+
+            //     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            // }
+    }
+
+    if (count_existing_neigh != 1)
+    {
+    e2->twin()->set_next(first_halfedge);
+    first_halfedge->set_prev(e2->twin());
+    }
+
+
+    // if(count_existing_neigh == 1){
+    //     int new_diff_id = old2new.at(diff_id);
+    //     cell_t curr_cell_diff(new_diff_id);
+    //     if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
+    //         cells_.push_back(curr_cell_diff);
+    //         std::cout << "Setting unbounded" << std::endl;
+    //         curr_cell_diff.set_unbounded();
+    //     }
+    // }
+
+    auto neighbor_simplexes = it->neighbors();
+
+    for (int old_neigh_cell_id : neighbor_simplexes){
+        if(old_neigh_cell_id != -1){
 
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -316,16 +429,20 @@ class Voronoi {
                 // e assegniamo gli halfedges in senso antiorario
                 for(int i=0; i<common.size(); ++i){
                     // find the element into the vector 
-                    auto it = std::find(vec_2.begin(), vec_2.end(), common[i]);
+                    auto found_element = std::find(vec_2.begin(), vec_2.end(), common[i]);
                     // check 
-                    assert(it != vec_2.end());
+                    assert(found_element != vec_2.end());
                     // find the corrensponding index
-                    int local_idx = std::distance(vec_2.begin(), it);
+                    int local_idx = std::distance(vec_2.begin(), found_element);
                     typename simplex_t::NodeType ver_coords = tria.node(local_idx);
 
                     // orientation check
                     int new_neigh_id = old2new.at(old_neigh_cell_id);
                     typename simplex_t::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
+
+                    if (neigh_centroid_coords(0) == centroid(0) and neigh_centroid_coords(1) == centroid(1)){
+                        continue;
+                    }
                     // create segments around the vertex
                     typename simplex_t::NodeType u = centroid - ver_coords;
                     typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
@@ -333,16 +450,23 @@ class Voronoi {
                     double cross = u(0)*v(1)-u(1)*v(0);
                     int new_ids = old2new.at(common[i]);
                     cell_t curr_cell(new_ids);
+                    typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge[std::make_pair(cell_id, new_neigh_id)];
+                    typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge[std::make_pair(new_neigh_id, cell_id)];
+
+                    if (mesh.is_node_on_boundary(common[i])){
+                        curr_cell.set_unbounded();
+                    }
+
                     // Add the new cell to the list if it is not yet added 
                     if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
                         if(cross < 0){
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
-                            curr_cell.set_halfedge(twin_halfedge);
+                            curr_cell.set_halfedge(current_twin_halfedge);
                             cells_.push_back(curr_cell);
                         }
                         else if(cross > 0){
                             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
-                            curr_cell.set_halfedge(cell_halfedge);
+                            curr_cell.set_halfedge(current_cell_halfedge);
                             cells_.push_back(curr_cell);
                         }
                         else{
@@ -373,13 +497,6 @@ class Voronoi {
             }
     }
 
-    if (count_existing_neigh != 1)
-    {
-    e2->twin()->set_next(first_halfedge);
-    first_halfedge->set_prev(e2->twin());
-    }
-
-
     if(count_existing_neigh == 1){
         int new_diff_id = old2new.at(diff_id);
         cell_t curr_cell_diff(new_diff_id);
@@ -389,6 +506,8 @@ class Voronoi {
             curr_cell_diff.set_unbounded();
         }
     }
+
+
 
     }
 
