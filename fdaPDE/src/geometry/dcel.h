@@ -210,7 +210,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
             if (!start or !start->next()) return cell_edges;
 
-            // Non so se con questo codice vada bene: non entra anche se start->next()==nullptr?
+            std::cout<<"Point: "<<start->next()->twin()->node()->coords()<<std::endl;
+            std::cout<<"Point: "<<start->next()->next()->node()->coords()<<std::endl;
+
             do {
                 cell_edges.push_back(he);
                 he = he->next();

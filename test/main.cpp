@@ -88,12 +88,13 @@ for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
   auto measure = it->measure();
   std::cout << measure << std::endl;
   i += 1;
-  if (measure != std::numeric_limits<double>::infinity()) sum+=measure;
-  else unbdd+=1;
+  // if (measure != std::numeric_limits<double>::infinity()) sum+=measure;
+  // else unbdd+=1;
+  if (measure != std::numeric_limits<double>::infinity()) break;
 }
-std::cout << "Printed area of " << i << " cells" << std::endl;
-std::cout << "Area " << sum <<std::endl;
-std::cout << "Unbounded " << unbdd << std::endl;
+// std::cout << "Printed area of " << i << " cells" << std::endl;
+// std::cout << "Area " << sum <<std::endl;
+// std::cout << "Unbounded " << unbdd << std::endl;
 
 
 int n_nodes = voronoi_obj.n_nodes();
@@ -103,7 +104,7 @@ int n_cells = voronoi_obj.n_cells();
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
 
-voronoi_obj.export_to_json("plots/data/voronoi_unit_square_16.json");
+// voronoi_obj.export_to_json("plots/data/voronoi_unit_square_16.json");
 
 return 0;
 }
