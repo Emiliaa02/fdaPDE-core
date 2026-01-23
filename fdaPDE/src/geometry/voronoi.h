@@ -60,7 +60,6 @@ class Voronoi {
         int cell_id = it->id();
         // Take a look at simplex.h (simplex_t::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
         typename simplex_t::NodeType centroid = it->circumcenter();
-        //std::cout<<"Centroid: "<<centroid(0)<<", "<<centroid(1)<<std::endl;
         // Create a vector that contains the IDs of the neighbors for the current mesh cell
         Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = it->neighbors();;
         std::vector<int> neigh_vec(neigh.data(), neigh.data() + neigh.size());
@@ -155,7 +154,7 @@ class Voronoi {
 
         int count_existing_neigh = 0;
         int diff_id = 0;
-        // Order the neighbouring cells in a counter clockwise way
+        // Order the neighbouring cells in a counter-clockwise way
         std::vector<int> ordered_neigh_ids;
         ordered_neigh_ids.reserve(node_neighbors_lookup.at(cell_id).size());
         int count_minus_one = 0;
@@ -184,11 +183,9 @@ class Voronoi {
         });
         ordered_neigh_ids.insert(ordered_neigh_ids.end(), count_minus_one, -1);
         // Loop over neighbouring cells
-        std::cout<<"IDs: "<<std::endl;
-        for (auto old_neigh_cell_id : ordered_neigh_ids) {
-            std::cout<<old_neigh_cell_id<<std::endl;
+        for (auto neigh_cell_id : ordered_neigh_ids) {
             // Define the variable for the neigh cell ID
-            int neigh_cell_id;
+            // int neigh_cell_id;
             // Create cell node
             typename dcel_t::node_t* cell_node;
             // Find nodes in the DCEL structure
@@ -200,9 +197,9 @@ class Voronoi {
             // Create twin halfedge (neigh -> centroid)
             typename dcel_t::halfedge_t* twin_halfedge = new dcel_t::halfedge_t();
 
-            if(old_neigh_cell_id != -1){
+            if(neigh_cell_id != -1){
                 // Retrieve new ID for neighbour
-                neigh_cell_id = old2new.at(old_neigh_cell_id);
+                // neigh_cell_id = old2new.at(old_neigh_cell_id);
                 if (neigh_cell_id == cell_id){
                     continue;
                 }
@@ -278,11 +275,12 @@ class Voronoi {
 
     auto neighbor_simplexes = it->neighbors();
 
+    // NELL'ALTRO CONSIDERIAMO TUTTI I NEIGHS
+    int count_neigh_tria = 0;
     for (int old_neigh_cell_id : neighbor_simplexes){
         if(old_neigh_cell_id != -1){
-
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+                count_neigh_tria += 1;
                 // Retrieve the triangle in the mesh using the old id
                 triangle_t tria(old_neigh_cell_id, &mesh);  
                 auto ids_neigh_node = tria.node_ids();
@@ -314,12 +312,16 @@ class Voronoi {
                     // check 
                     assert(found_element != vec_2.end());
                     // find the corrensponding index
-                    int local_idx = std::distance(vec_2.begin(), found_element);
-                    typename simplex_t::NodeType ver_coords = tria.node(local_idx);
+                    //int local_idx = std::distance(vec_2.begin(), found_element);
+                    //typename simplex_t::NodeType ver_coords = tria.node(local_idx);
+                    //SECONDO ME ERA SBAGLIATO QUELLO
+                    typename simplex_t::NodeType ver_coords = mesh.node(common[i]);
 
                     // orientation check
                     int new_neigh_id = old2new.at(old_neigh_cell_id);
                     typename simplex_t::NodeType neigh_centroid_coords = centroid_lookup.at(new_neigh_id);
+                    // Create the new cell
+                    cell_t curr_cell(common[i]);
 
                     if (neigh_centroid_coords(0) == centroid(0) and neigh_centroid_coords(1) == centroid(1)){
                         continue;
@@ -329,8 +331,6 @@ class Voronoi {
                     typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
                     // cross product
                     double cross = u(0)*v(1)-u(1)*v(0);
-                    int new_ids = old2new.at(common[i]);
-                    cell_t curr_cell(new_ids);
                     typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge[std::make_pair(cell_id, new_neigh_id)];
                     typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge[std::make_pair(new_neigh_id, cell_id)];
 
@@ -378,9 +378,8 @@ class Voronoi {
             }
     }
 
-    if(count_existing_neigh == 1){
-        int new_diff_id = old2new.at(diff_id);
-        cell_t curr_cell_diff(new_diff_id);
+    if(count_neigh_tria == 1){
+        cell_t curr_cell_diff(diff_id);
         curr_cell_diff.set_unbounded();
         if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
             cells_.push_back(curr_cell_diff);
@@ -395,19 +394,6 @@ class Voronoi {
 
     std::cout << "\nFinished constructor" << std::endl;
 
-    }
-
-
-    void sort_points_by_angle_ccw(std::vector<typename simplex_t::NodeType>& points, const typename simplex_t::NodeType& center) {
-        std::sort(points.begin(), points.end(),
-        [&](const typename simplex_t::NodeType& a, const typename simplex_t::NodeType& b)
-        {
-            double ang_a = std::atan2(a.y() - center.y(),
-                                    a.x() - center.x());
-            double ang_b = std::atan2(b.y() - center.y(),
-                                    b.x() - center.x());
-            return ang_a < ang_b;
-        });
     }
 
 
