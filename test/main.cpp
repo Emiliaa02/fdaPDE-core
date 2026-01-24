@@ -76,7 +76,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
 
 Voronoi<2, 2> voronoi_obj(mesh);
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
@@ -91,7 +91,6 @@ for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
   i += 1;
   if (measure != std::numeric_limits<double>::infinity()) sum+=measure;
   if(it->is_unbounded()){
-    // std::cout<<it->measure()<<std::endl;
     unbdd+=1;
   }
 }
@@ -107,7 +106,7 @@ int n_cells = voronoi_obj.n_cells();
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
 
-//voronoi_obj.export_to_json("plots/data/voronoi_unit_square_16.json");
+//voronoi_obj.export_to_json("plots/data/voronoi_c_shaped.json");
 
 return 0;
 }

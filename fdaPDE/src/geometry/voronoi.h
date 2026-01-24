@@ -124,7 +124,7 @@ class Voronoi {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ==========================================================================================================================================
-
+    std::unordered_set<int> not_created_cells;
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
@@ -323,9 +323,6 @@ class Voronoi {
                     // Create the new cell
                     cell_t curr_cell(common[i]);
 
-                    if (neigh_centroid_coords(0) == centroid(0) and neigh_centroid_coords(1) == centroid(1)){
-                        continue;
-                    }
                     // create segments around the vertex
                     typename simplex_t::NodeType u = centroid - ver_coords;
                     typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
@@ -340,21 +337,20 @@ class Voronoi {
 
                     // Add the new cell to the list if it is not yet added 
                     if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
-                        if(cross < 0){
+                        if(cross < -1e-9){
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(current_twin_halfedge);
                             cells_.push_back(curr_cell);
+                            not_created_cells.erase(common[i]);
                         }
-                        else if(cross > 0){
+                        else if(cross > 1e-9){
                             // cross product > 0 means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(current_cell_halfedge);
                             cells_.push_back(curr_cell);
+                            not_created_cells.erase(common[i]);
                         }
                         else{
-                            std::cout<<"Undetermined: cross product is zero"<<std::endl;
-                            std::cout << "centroid coordinates" << centroid << std::endl;
-                            std::cout << "neigh_centroid_coords coordinates" << neigh_centroid_coords << std::endl;
-                            std::cout << "Vertex coordinates" << ver_coords << std::endl; 
+                            not_created_cells.insert(common[i]);
                         }
                         }
                 }
@@ -388,10 +384,16 @@ class Voronoi {
 
     }
 
+    for(auto it = not_created_cells.begin(); it != not_created_cells.end(); ++it){
+        cell_t curr_cell(*it);
+        if (mesh.is_node_on_boundary(*it)){
+            curr_cell.set_unbounded();
+        }
+        cells_.push_back(curr_cell);
+    }
+
 // ==========================================================================================================================================
-
     int n_cells = dcel_.n_cells();
-
     std::cout << "\nFinished constructor" << std::endl;
 
     }
