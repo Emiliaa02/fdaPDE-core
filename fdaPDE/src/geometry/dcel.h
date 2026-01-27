@@ -355,16 +355,18 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
     // observers
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> nodes() const {   // matrix of nodes coordinates
+        // std::cout << "Beginning DCEL" << std::endl;
         Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> coords(nodes_.size(), embed_dim);
+        // std::cout << "Created coords" << nodes_.size() << std::endl;
         auto n_s = nodes_.size();
-        // std::cout << "\nINSIDE DCEL: looping over number of nodes: " << n_s;
+        // std::cout << "\nINSIDE DCEL: looping over number of nodes: " << n_s << std::endl;
         for (auto it=nodes_.cbegin(); it!=nodes_.cend(); ++it) {
-        // {   std::cout << "\nINSIDE DCEL: Adding a node coords to the nodes() result...";
+            // std::cout << "\nINSIDE DCEL: Adding a node coords to the nodes() result..." << "ID is " << it->id() << std::endl;
             coords.row(it->id()) = it->coords(); 
             // std::cout << "\nINSIDE DCEL: bool " << (whatever == nodes_.cend());
             // std::cout << "\nINSIDE DCEL: Added...";
         }
-        // std::cout << "INSIDE DCEL: Finished loop populating coords...";
+        // std::cout << "INSIDE DCEL: Finished loop populating coords..." << std::endl;
         return coords;
     }
 

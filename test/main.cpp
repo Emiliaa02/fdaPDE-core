@@ -76,28 +76,10 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/quasi_circle/points.csv", "data/mesh/quasi_circle/elements.csv", "data/mesh/quasi_circle/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 
 Voronoi<2, 2> voronoi_obj(mesh);
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
-
-// fate operazioni...
-int i = 0;
-float sum=0;
-int unbdd=0;
-for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-  auto measure = it->measure();
-  std::cout << measure << std::endl;
-  i += 1;
-  if (measure != std::numeric_limits<double>::infinity()) sum+=measure;
-  if(it->is_unbounded()){
-    unbdd+=1;
-  }
-}
-std::cout << "Printed area of " << i << " cells" << std::endl;
-std::cout << "Area " << sum <<std::endl;
-std::cout << "Unbounded " << unbdd << std::endl;
-
 
 int n_nodes = voronoi_obj.n_nodes();
 int n_edges = voronoi_obj.n_edges();
@@ -105,6 +87,28 @@ int n_cells = voronoi_obj.n_cells();
 
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
+
+
+
+// fate operazioni...
+// int i = 0;
+// float sum=0;
+// int unbdd=0;
+// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+//   auto measure = it->measure();
+//   std::cout << measure << std::endl;
+//   i += 1;
+//   if (measure != std::numeric_limits<double>::infinity()) sum+=measure;
+//   if(it->is_unbounded()){
+//     unbdd+=1;
+//   }
+// }
+// std::cout << "Printed area of " << i << " cells" << std::endl;
+// std::cout << "Area " << sum <<std::endl;
+// std::cout << "Unbounded " << unbdd << std::endl;
+
+
+
 
 //voronoi_obj.export_to_json("plots/data/voronoi_quasi_circle.json");
 

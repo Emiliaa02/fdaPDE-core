@@ -57,6 +57,19 @@ template <typename Triangulation> class Triangle : public Simplex<Triangulation:
             return std::cmp_greater(mesh_->edges_markers().size(), edge_id_) ? mesh_->edges_markers()[edge_id_] :
                                                                                Unmarked;
         }
+
+        // Computation of midpoint
+        Eigen::Matrix<double, 2, 1> compute_midpoint() const{
+            Eigen::Matrix<int, Dynamic, 1> node_ids = this -> node_ids();
+            Eigen::Matrix<double, 2, 1> node_1 = mesh_ -> node(node_ids[0]);
+            Eigen::Matrix<double, 2, 1> node_2 = mesh_ -> node(node_ids[1]);
+
+            Eigen::Matrix<double, 2, 1> midpoint;
+            midpoint(0) = (node_1(0) + node_2(0)) / 2;
+            midpoint(1) = (node_1(1) + node_2(1)) / 2;
+
+            return midpoint;
+        }
     };
 
     // getters

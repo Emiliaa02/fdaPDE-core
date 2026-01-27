@@ -82,16 +82,16 @@ template <typename IteratorType, typename ValueType> class index_iterator {
             return &val_;
         }
     }
-    IteratorType operator++(int) {
-        IteratorType tmp(index_, static_cast<IteratorType*>(this));
-        ++(derived());
-        return tmp;
-    }
-    IteratorType operator--(int) {
-        IteratorType tmp(index_, static_cast<IteratorType*>(this));
-        --(derived());
-        return tmp;
-    }
+    // IteratorType operator++(int) {
+    //     IteratorType tmp(index_, static_cast<IteratorType*>(this));
+    //     ++(derived());
+    //     return tmp;
+    // }
+    // IteratorType operator--(int) {
+    //     IteratorType tmp(index_, static_cast<IteratorType*>(this));
+    //     --(derived());
+    //     return tmp;
+    // }
     IteratorType& operator++() {
         index_++;
         if (index_ < end_) derived().operator()(index_);
@@ -101,6 +101,17 @@ template <typename IteratorType, typename ValueType> class index_iterator {
         --index_;
         if (index_ >= begin_) derived().operator()(index_);
         return derived();
+    }
+    // Added by us
+    IteratorType operator++(int) {
+        IteratorType tmp = static_cast<IteratorType&>(*this);
+        ++(*this);
+        return tmp;
+    }
+    IteratorType operator--(int) {
+        IteratorType tmp = static_cast<IteratorType&>(*this);
+        --(*this);
+        return tmp;
     }
     friend bool
     operator!=(const index_iterator<IteratorType, ValueType>& lhs, const index_iterator<IteratorType, ValueType>& rhs) {
