@@ -48,6 +48,8 @@ class Voronoi {
     std::vector<int> first_id_lookup(n_mesh_faces);
     // Lookup for midpoints coordinates
     std::map<int, typename simplex_t::NodeType> midpoints_lookup;
+    // Map that associates a pair of centroids to the halfedge that connects them
+    std::map<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
 
     int cur_id = 0;
 
@@ -175,8 +177,6 @@ class Voronoi {
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
 
-        // Map that associates a pair of centroids to the halfedge that connects them
-        std::map<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
         // Retrieve the IDs of the vertices of the current cell
         Eigen::Matrix<int, Dynamic, 1> ids_node = it->node_ids();
         // Retrieve the old ID of the current cell
@@ -296,11 +296,12 @@ class Voronoi {
                 // Update lookup
                 cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
                 twin_node->add_halfedge(cell_id, twin_halfedge);
+                // std::cout<< "Cell node ID:  "<< cell_node->id()<< "  Twin node ID:  "<<twin_node->id()<<std::endl;
+                // std::cout<< "Cell node coords:  "<< cell_node->coords()<< "  Twin node coords:  "<<twin_node->coords()<<std::endl;
                 vertexes2halfedge[std::make_pair<int, int>(cell_node->id(), twin_node->id())] = cell_halfedge;
                 vertexes2halfedge[std::make_pair<int, int>(twin_node->id(), cell_node->id())] = twin_halfedge;
             }
-
-            // If neighbouring cell was not visited,, only retrieve the halfedges
+            // If neighbouring cell was not visited, only retrieve the halfedges
             else{
                 delete cell_halfedge;
                 delete twin_halfedge;
@@ -329,7 +330,6 @@ class Voronoi {
     e2->twin()->set_next(first_halfedge);
     first_halfedge->set_prev(e2->twin());
     }
-
     }
 
     auto neighbor_simplexes = it->neighbors();
@@ -387,14 +387,24 @@ class Voronoi {
                     typename simplex_t::NodeType v = neigh_centroid_coords - ver_coords;
                     // cross product
                     double cross = u(0)*v(1)-u(1)*v(0);
+
+                    // if(cell_id == new_neigh_id){
+                    //     not_created_cells.insert(common[i]);
+                    //     continue;
+                    // }
+
                     typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge[std::make_pair(cell_id, new_neigh_id)];
                     typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge[std::make_pair(new_neigh_id, cell_id)];
 
                     if (mesh.is_node_on_boundary(common[i])){
                         curr_cell.set_unbounded();
                     }
-
+                    // if(current_cell_halfedge == nullptr & current_twin_halfedge == nullptr){
+                    //     std::cout<<"Cell id: "<< cell_id << "  Neigh cell id: "<<new_neigh_id<<std::endl;
+                    //     std::cout<<"Cell coords: "<< centroid << "  Neigh cell coords: "<<neigh_centroid_coords<<std::endl;
+                    // }
                     // Add the new cell to the list if it is not yet added 
+
                     if (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
                         if(cross < -1e-9){
                             // cross product < 0 means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
