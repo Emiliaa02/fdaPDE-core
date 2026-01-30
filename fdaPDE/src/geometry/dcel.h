@@ -421,11 +421,12 @@ template <int LocalDim, int EmbedDim> class DCEL {
             json edge;
             edge["id"] = it->id();
             edge["from"] = it->node()->id();
-            edge["to"] = it->next()->node()->id();
-            edge["twin"] = it->twin() ? it->twin()->id() : -1; 
+            edge["to"] = it->twin() ? it->twin()->node()->id() : it->next()->node()->id();
+            edge["twin"] = it->twin() ? it->twin()->id() : -1;
             edge["segment"] = it->is_segment();
             j["edges"].push_back(edge);
         }
+
         j["cells"] = json::array();
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
             json cell;

@@ -273,8 +273,10 @@ class Voronoi {
             // if (!visited_centroids.at(neigh_cell_id))
             if (twin_node->neighID2halfedge(cell_id)==nullptr){
                 // Set IDs based on counter
-                cell_halfedge->set_id(counter++);
-                twin_halfedge->set_id(counter++);
+                // cell_halfedge->set_id(counter++);
+                // twin_halfedge->set_id(counter++);
+                cell_halfedge = dcel_.emplace_halfedge(cell_node);
+                twin_halfedge = dcel_.emplace_halfedge(twin_node);
 
                 // Set halfedge to the cell centroid
                 cell_node->set_halfedge(cell_halfedge);
@@ -282,13 +284,14 @@ class Voronoi {
                 twin_node->set_halfedge(twin_halfedge);
 
                 // Add node and twin to the halfedges
-                cell_halfedge->set_node(cell_node);
-                twin_halfedge->set_node(twin_node);
+                // cell_halfedge->set_node(cell_node);
+                // twin_halfedge->set_node(twin_node);
+
                 cell_halfedge->set_twin(twin_halfedge);
                 twin_halfedge->set_twin(cell_halfedge);
 
                 // Add the halfedges (true because, being twins, cells for the two halfedges are different)
-                dcel_.insert_edge(cell_halfedge, twin_halfedge, true);
+                // dcel_.insert_edge(cell_halfedge, twin_halfedge, true);
 
                 // Update lookup
                 cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
