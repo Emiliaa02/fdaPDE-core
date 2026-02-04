@@ -88,8 +88,6 @@ int n_cells = voronoi_obj.n_cells();
 
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
 
-
-
 // fate operazioni...
 // int i = 0;
 // float sum=0;

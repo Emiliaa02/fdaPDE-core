@@ -459,6 +459,11 @@ template <int LocalDim, int EmbedDim> class DCEL {
         return std::addressof(nodes_.back());
     }
 
+    cell_t* insert_cell(const cell_t& cell) {
+        cells_.push_back(cell);
+        return std::addressof(cells_.back());
+    }
+
     halfedge_t* insert_edge(halfedge_t* v1, halfedge_t* v2, bool ignore_diff_cells=false) {
 
         if( (!v1 || !v2) ||
