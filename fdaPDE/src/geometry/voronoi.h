@@ -64,113 +64,10 @@ class Voronoi {
     int infty_id = cur_id;
     typename simplex_t::NodeType v_vertex_infty = simplex_t::NodeType::Constant(std::numeric_limits<double>::infinity());
     centroid_lookup[infty_id] = v_vertex_infty;
-    typename dcel_t::node_t infty_node(infty_id, false, v_vertex_infty);
-    dcel_.insert_node(infty_node);
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Loop to compute centroids
-    // int cur_id = 0;
-    // int cur_midpoint_id = -1;
-    // int first_id = 0;
-    // for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
-
-    //     // Retrieve ID of the current mesh cell
-    //     int cell_id = it->id();
-    //     // Take a look at simplex.h (simplex_t::NodeType is a Eigen::Matrix<double, embed_dim, 1>)
-    //     typename simplex_t::NodeType centroid = it->circumcenter();
-    //     // Create a vector that contains the IDs of the neighbors for the current mesh cell
-    //     Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = it->neighbors();;
-    //     std::vector<int> neigh_vec(neigh.data(), neigh.data() + neigh.size());
-
-    //     std::vector<int> mp_ids;
-
-    //     for (auto cell_edge = it->edges_begin(); cell_edge != it->edges_end(); cell_edge++){
-    //         if (cell_edge -> on_boundary()){
-    //             // ... compute midpoint ...
-    //             auto mp = cell_edge -> compute_midpoint();
-
-    //             // ... and create a new midpoint index
-    //             midpoints_lookup[cur_midpoint_id] = mp;
-
-    //             // Add in the added midpoint ids
-    //             mp_ids.push_back(cur_midpoint_id);
-
-    //             cur_midpoint_id -= 1;
-    //         }
-    //     }
-
-    //     // Replace inside neigh_vec -1s with actual midpoint IDs 
-    //     std::size_t ii=0;
-    //     for (int& neigh_tmp_id : neigh_vec){
-    //         if (neigh_tmp_id == -1){
-    //             neigh_vec[ii] = mp_ids[ii];
-    //             ii += 1;
-    //         }
-    //     }
-
-    //     // Check that the centroid is not already present
-    //     bool already_present = false;
-    //     int same_centroid_idx;
-    //     for (auto ii = 0; ii < centroid_lookup.size(); ++ii){
-    //         float thresh = 1e-9;
-    //         if (std::abs(centroid_lookup[ii](0)-centroid(0))<thresh and std::abs(centroid_lookup[ii](1)-centroid(1))<thresh){
-    //             already_present = true;
-    //             same_centroid_idx = ii;
-    //             break;
-    //         }
-    //     }
-
-    //     if (!already_present){
-    //         // First ID for the current centroid
-    //         first_id_lookup[cur_id] = cell_id;
-    //         // New ID
-    //         old2new[cell_id] = cur_id;
-
-    //         // Insert inside the DCEL the node, for now without the halfedge
-    //         typename dcel_t::node_t cell_node(cur_id, false, centroid);
-    //         dcel_.insert_node(cell_node);
-
-    //         // Update all the lookup
-    //         centroid_lookup[cur_id] = centroid;
-    //         visited_centroids[cur_id] = false; 
-    //         on_boundary[cur_id] = false;
-    //         node_neighbors_lookup[cur_id] = neigh_vec;
-
-    //         cur_id += 1;
-    //     }
-    //     else{
-    //         // New ID
-    //         old2new[cell_id] = same_centroid_idx;
-
-    //         // Add inside neighbours lookup the current cell neighbours (being valid neighbours for the centroid)
-    //         node_neighbors_lookup[same_centroid_idx].insert(node_neighbors_lookup[same_centroid_idx].end(), neigh_vec.begin(), neigh_vec.end());
-
-    //         // Remove from neighbours lookup the current cell ID
-    //         node_neighbors_lookup[same_centroid_idx].erase(std::remove(node_neighbors_lookup[same_centroid_idx].begin(), node_neighbors_lookup[same_centroid_idx].end(), cell_id),node_neighbors_lookup[same_centroid_idx].end());
-    //         // Remove from neighbours lookup the representative cell ID
-    //         node_neighbors_lookup[same_centroid_idx].erase(std::remove(node_neighbors_lookup[same_centroid_idx].begin(), node_neighbors_lookup[same_centroid_idx].end(), first_id_lookup[same_centroid_idx]),node_neighbors_lookup[same_centroid_idx].end());
-    //     }
-
-    // }
-
-    // // Define the node at infinity for the unbounded cells 
-    // int infty_id = cur_id;
-    // typename simplex_t::NodeType centroid_infty = simplex_t::NodeType::Constant(std::numeric_limits<double>::infinity());
-    // // Add the infinity node to the lookup
-    // centroid_lookup[infty_id] = centroid_infty;
-    // visited_centroids[infty_id] = false;
-    // on_boundary[infty_id] = false;
-    // // Insert it in the DCEL structure
-    // typename dcel_t::node_t infty_node(infty_id, false, centroid_infty);
-    // dcel_.insert_node(infty_node);
-    // // Shrink the vectors capacity if less elements than estimated were used
-    // centroid_lookup.shrink_to_fit();
-    // visited_centroids.shrink_to_fit();
-    // on_boundary.shrink_to_fit();
-    // first_id_lookup.shrink_to_fit();
-    // node_neighbors_lookup.shrink_to_fit();
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    typename dcel_t::node_t* infty_node =
+    dcel_.insert_node(
+        typename dcel_t::node_t(infty_id, false, v_vertex_infty)
+    );
 
 // ==========================================================================================================================================
     std::unordered_set<int> not_created_cells;
@@ -202,41 +99,43 @@ class Voronoi {
         int count_existing_neigh = 0;
         int diff_id = 0;
         // Order the neighbouring cells in a counter-clockwise way
-        std::vector<int> ordered_neigh_ids;
-        ordered_neigh_ids.reserve(node_neighbors_lookup.at(cell_id).size());
-        int count_minus_one = 0;
-        for (auto old_neigh_cell_id : node_neighbors_lookup.at(cell_id)) {
-            if(old_neigh_cell_id >= 0){
-                int new_neigh_id = old2new.at(old_neigh_cell_id);
-                ordered_neigh_ids.push_back(new_neigh_id);
-            }
-            else{
-                ordered_neigh_ids.push_back(old_neigh_cell_id);
-            }
-        }
+        std::vector<int> ordered_neigh_ids = order_neighbours_cclw_(cell_id, node_neighbors_lookup,
+        old2new, centroid_lookup, midpoints_lookup);
 
-        std::sort(ordered_neigh_ids.begin(), ordered_neigh_ids.end(),
-            [&](int id_a, int id_b)
-        {
-            typename simplex_t::NodeType pa;
-            typename simplex_t::NodeType pb;
-            if (id_a < 0){pa = midpoints_lookup.at(id_a);}
-            else{pa = centroid_lookup.at(id_a);}
+        // std::cout << "Neighbours of 2 " << std::endl;
+        // for(auto elimina : node_neighbors_lookup.at(2)){
+        //     std::cout << "Old " << elimina << std::endl;
+        //     if (elimina >= 0){
+        //         std::cout << "New " << old2new.at(elimina) << std::endl;
+        //     }
+        //     else{
+        //         std::cout << "New " << midpoints_lookup.at(elimina) << std::endl;
+        //     }
+        // }
+
+
+        // ordered_neigh_ids.reserve(node_neighbors_lookup.at(cell_id).size());
+
+        // for (auto old_neigh_cell_id : node_neighbors_lookup.at(cell_id)) {
+
+        //     int new_neigh_id = retrieve_v_vertex_id_(old_neigh_cell_id, old2new);
             
-            if (id_b < 0){pb = midpoints_lookup.at(id_b);}
-            else{pb = centroid_lookup.at(id_b);}
+        //     ordered_neigh_ids.push_back(new_neigh_id);
+        // }
 
-            double ang_a = std::atan2(pa.y() - centroid.y(),
-                                    pa.x() - centroid.x());
-            double ang_b = std::atan2(pb.y() - centroid.y(),
-                                    pb.x() - centroid.x());
+        // std::sort(ordered_neigh_ids.begin(), ordered_neigh_ids.end(),
+        //     [&](int id_a, int id_b)
+        // {
+        //     typename simplex_t::NodeType pa = id2point_(id_a, midpoints_lookup, centroid_lookup);
+        //     typename simplex_t::NodeType pb = id2point_(id_b, midpoints_lookup, centroid_lookup);
 
-            return ang_a < ang_b;
-        });
+        //     double ang_a = std::atan2(pa.y() - centroid.y(),
+        //                             pa.x() - centroid.x());
+        //     double ang_b = std::atan2(pb.y() - centroid.y(),
+        //                             pb.x() - centroid.x());
 
-        // Retransform back all negative IDs to -1
-        std::transform(ordered_neigh_ids.begin(), ordered_neigh_ids.end(), ordered_neigh_ids.begin(),
-                   [](int x) { return x < 0 ? -1 : x; });
+        //     return ang_a < ang_b;
+        // });
 
         // Loop over neighbouring cells
         for (auto neigh_cell_id : ordered_neigh_ids) {
@@ -253,7 +152,7 @@ class Voronoi {
             // Create twin halfedge (neigh -> centroid)
             typename dcel_t::halfedge_t* twin_halfedge = new dcel_t::halfedge_t();
 
-            if(neigh_cell_id != -1){
+            if(neigh_cell_id >= 0){
                 // Retrieve new ID for neighbour
                 // neigh_cell_id = old2new.at(old_neigh_cell_id);
                 if (neigh_cell_id == cell_id){
@@ -266,15 +165,13 @@ class Voronoi {
             else{
                 // The centroid of the neighbouring cell is the infinity node
                 neigh_cell_id = infty_id;
-                twin_node = &infty_node;
+                twin_node = infty_node;
             }
 
             // If neighbouring cell was not visited, its node needs an halfedge
             // if (!visited_centroids.at(neigh_cell_id))
             if (twin_node->neighID2halfedge(cell_id)==nullptr){
                 // Set IDs based on counter
-                // cell_halfedge->set_id(counter++);
-                // twin_halfedge->set_id(counter++);
                 cell_halfedge = dcel_.emplace_halfedge(cell_node);
                 twin_halfedge = dcel_.emplace_halfedge(twin_node);
 
@@ -283,21 +180,13 @@ class Voronoi {
                 // Set halfedge to the neighbouring centroid
                 twin_node->set_halfedge(twin_halfedge);
 
-                // Add node and twin to the halfedges
-                // cell_halfedge->set_node(cell_node);
-                // twin_halfedge->set_node(twin_node);
-
                 cell_halfedge->set_twin(twin_halfedge);
                 twin_halfedge->set_twin(cell_halfedge);
-
-                // Add the halfedges (true because, being twins, cells for the two halfedges are different)
-                // dcel_.insert_edge(cell_halfedge, twin_halfedge, true);
 
                 // Update lookup
                 cell_node->add_halfedge(neigh_cell_id, cell_halfedge);
                 twin_node->add_halfedge(cell_id, twin_halfedge);
-                // std::cout<< "Cell node ID:  "<< cell_node->id()<< "  Twin node ID:  "<<twin_node->id()<<std::endl;
-                // std::cout<< "Cell node coords:  "<< cell_node->coords()<< "  Twin node coords:  "<<twin_node->coords()<<std::endl;
+
                 vertexes2halfedge[std::make_pair<int, int>(cell_node->id(), twin_node->id())] = cell_halfedge;
                 vertexes2halfedge[std::make_pair<int, int>(twin_node->id(), cell_node->id())] = twin_halfedge;
             }
@@ -331,6 +220,28 @@ class Voronoi {
     first_halfedge->set_prev(e2->twin());
     }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     auto neighbor_simplexes = it->neighbors();
 
@@ -455,6 +366,9 @@ class Voronoi {
 
     for(auto it = not_created_cells.begin(); it != not_created_cells.end(); ++it){
         cell_t curr_cell(*it);
+        if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end()){
+            continue;
+        }
         if (mesh.is_node_on_boundary(*it)){
             curr_cell.set_unbounded();
         }
@@ -568,13 +482,20 @@ class Voronoi {
     // Internal function for computing v_vertex neighbours
     std::vector<int> compute_neighbours_(const triangle_t& d_simplex, 
         std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
-        int& cur_midpoint_id){
+        int& cur_midpoint_id,
+        bool print){
                                         
         // Get neighbours
         Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = d_simplex.neighbors();
 
         // Store them inside a vector
         std::vector<int> neigh_vec(neigh.data(), neigh.data() + neigh.size());
+
+        if(print){
+            for (int elim : neigh_vec){
+                std::cout << elim << std::endl;
+            }
+        }
 
         // Midpoint IDs
         std::vector<int> mp_ids;
@@ -594,17 +515,28 @@ class Voronoi {
                     // Add in the added midpoint ids
                     mp_ids.push_back(cur_midpoint_id);
 
+                    if(print){std::cout << "Found one on boundary to which we assigned ID: " << cur_midpoint_id << std::endl;}
+
                     cur_midpoint_id -= 1;
                 }
             }
 
         // Replace inside neigh_vec -1s with actual midpoint IDs 
         std::size_t ii=0;
+        std::size_t jj=0;
         for (int& neigh_tmp_id : neigh_vec){
             if (neigh_tmp_id == -1){
-                neigh_vec[ii] = mp_ids[ii];
+                neigh_vec[jj] = mp_ids[ii];
                 ii += 1;
             }
+            jj += 1;
+        }
+
+        if (print){
+            std::cout << "After changes" << std::endl;
+        for (int id_elimm : neigh_vec){
+            std::cout << id_elimm << std::endl;
+        }
         }
 
         return neigh_vec;
@@ -656,7 +588,7 @@ class Voronoi {
             typename simplex_t::NodeType d_centroid = d_simplex_it->circumcenter();
 
             // Compute neighbours
-            std::vector<int> neigh_vec = compute_neighbours_(*(d_simplex_it), midpoints_lookup, cur_midpoint_id);
+            std::vector<int> neigh_vec = compute_neighbours_(*(d_simplex_it), midpoints_lookup, cur_midpoint_id, false);
 
             // Check whether d_centroid is already associated to a v_vertex
             int v_vertex_id = v_vertex_from_d_centroid_(v_vertex_lookup, d_centroid);
@@ -693,12 +625,28 @@ class Voronoi {
 
                 // Update all structures
                 v_vertex_neighbours_lookup[cur_id] = neigh_vec;
+
+                if (v_vertex_id==2){
+                    std::cout << "\nIf the first time:" << std::endl;
+                    for(auto neigh_elim : neigh_vec){
+                        std::cout << neigh_elim << std::endl;
+                    }
+                }
                 first_d_centroid[cur_id] = d_centroid_id;
                 v_vertex_lookup[cur_id] = d_centroid;
 
                 // Increment current ID
                 cur_id += 1;
             }
+
+            // if (v_vertex_id==2){
+            //     std::cout << "\nIt's 2 " << std::endl;
+            //     std::vector<int>elim = compute_neighbours_(*(d_simplex_it), midpoints_lookup, cur_midpoint_id, true);
+            //     std::cout << "\nThis is neigh: " << std::endl;
+            //     for(auto neigh_elim : v_vertex_neighbours_lookup[2]){
+            //         std::cout << neigh_elim << std::endl;
+            //     }
+            // }
 
             // Update d_centroid2v_vertex
             d_centroid2v_vertex[d_centroid_id] = v_vertex_id;
@@ -707,6 +655,68 @@ class Voronoi {
 
         return v_vertex_neighbours_lookup;
 
+    }
+
+    int retrieve_v_vertex_id_(
+                            int d_centroid_id,
+                            std::vector<int>& d_centroid2v_vertex){
+
+        // If positive, than it is a physical d_centroid
+        if (d_centroid_id >= 0) return d_centroid2v_vertex[d_centroid_id];
+
+        // Else it is a midpoint
+        return d_centroid_id;
+    }
+
+    typename simplex_t::NodeType id2point_(
+                                        int id,
+                                        std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
+                                        std::map<int, typename simplex_t::NodeType>& midpoints_lookup
+    ){
+        // If positive, then it is a physical d_centroid
+        if (id >= 0) return v_vertex_lookup.at(id);
+
+        // Else it is a midpoint
+        return midpoints_lookup.at(id);
+    }
+
+    std::vector<int> order_neighbours_cclw_(
+                                        int v_vertex_id,
+                                        std::vector<std::vector<int>>& v_vertex_neighbours_lookup,
+                                        std::vector<int>& d_centroid2v_vertex,
+                                        std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
+                                        std::map<int, typename simplex_t::NodeType>& midpoints_lookup
+    ){
+
+        // Retrieve v_vertex_coords
+        typename simplex_t::NodeType v_vertex = id2point_(v_vertex_id, v_vertex_lookup, midpoints_lookup);
+
+        // Create ordered neighbours structure
+        std::vector<int> ordered_neigh_ids(v_vertex_neighbours_lookup.at(v_vertex_id).size());
+
+        // Loop over neighbours
+        for (auto d_centroid_neigh_id : v_vertex_neighbours_lookup.at(v_vertex_id)) {
+
+            int neigh_id = retrieve_v_vertex_id_(d_centroid_neigh_id, d_centroid2v_vertex);
+            
+            ordered_neigh_ids.push_back(neigh_id);
+        }
+
+        std::sort(ordered_neigh_ids.begin(), ordered_neigh_ids.end(),
+            [&](int id_a, int id_b)
+        {
+            typename simplex_t::NodeType pa = id2point_(id_a, v_vertex_lookup, midpoints_lookup);
+            typename simplex_t::NodeType pb = id2point_(id_b, v_vertex_lookup, midpoints_lookup);
+
+            double ang_a = std::atan2(pa.y() - v_vertex.y(),
+                                    pa.x() - v_vertex.x());
+            double ang_b = std::atan2(pb.y() - v_vertex.y(),
+                                    pb.x() - v_vertex.x());
+
+            return ang_a < ang_b;
+        });
+
+        return ordered_neigh_ids;
     }
    
 
