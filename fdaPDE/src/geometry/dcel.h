@@ -243,7 +243,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             for(int i=0; i<points_list.size(); ++i){
                 points_coords.row(i) = points_list[i] -> coords();
             }
-            return std::abs(internals::signed_measure_2d_polygon(points_coords));
+            return internals::signed_measure_2d_polygon(points_coords);
         }
       
  

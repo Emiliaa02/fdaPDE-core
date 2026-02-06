@@ -91,8 +91,6 @@ class Voronoi {
     
     }
 
-    std::cout << "Max and min: " << max_common << " " << min_common << std::endl;
-
         for(auto internal_it = not_created_cells.begin(); internal_it != not_created_cells.end(); ++internal_it){
             cell_t curr_cell(*internal_it);
             if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end()){
@@ -350,7 +348,7 @@ class Voronoi {
             double ang_b = std::atan2(pb.y() - v_vertex.y(),
                                     pb.x() - v_vertex.x());
 
-            return ang_a < ang_b;
+            return ang_a > ang_b;
         });
 
         return ordered_neigh_ids;
@@ -431,6 +429,7 @@ class Voronoi {
             visited_v_vertex[v_vertex_id] = true;
             // Set previous and next
             e2 = cell_halfedge;  
+
             if (count_existing_neigh != 0){
                 e1->twin()->set_next(e2);
                 e2->set_prev(e1->twin());
@@ -505,10 +504,6 @@ class Voronoi {
                     // Retrieve the corrensponding coordinates
                     typename simplex_t::NodeType d_vertex = mesh.node(idx);
 
-                    if(idx == 32){
-                        std::cout << "Coords of " << idx << ": " << d_vertex << std::endl;
-                    }
-
                     int neigh_v_vertex_id = d_centroid2v_vertex.at(neigh_d_centroid_id);
                     typename simplex_t::NodeType neigh_v_vertex = v_vertex_lookup.at(neigh_v_vertex_id);
                     // Create the new cell
@@ -525,9 +520,6 @@ class Voronoi {
                     if (mesh.is_node_on_boundary(idx)){
                         curr_cell.set_unbounded();
                     }
-                    // if(common[i]==33){
-                    // std::cout << "Value of cross: " << cross << ". Is it smaller? " << (cross < -1e-9) << ". Is it bigger? " << (cross > 1e-9) << std::endl;
-                    // std::cout << "Is it absent? " << (std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()) << std::endl;}
 
                     // Add the new cell to the list if it is not yet added 
                     if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){

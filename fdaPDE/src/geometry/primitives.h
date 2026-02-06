@@ -68,7 +68,7 @@ constexpr double signed_measure_2d_polygon(const PointList& points) {
         }
         area += (points[n_points - 2] + points[0]) * (points[1] - points[n_points - 1]);
     }
-    return area;
+    return area/2;
 }
 template <typename PointList> constexpr bool are_2d_counterclockwise_sorted(const PointList& points) {
     return signed_measure_2d_polygon(points) > 0;
