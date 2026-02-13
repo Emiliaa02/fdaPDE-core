@@ -229,27 +229,40 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
             do {
                 cell_edges.push_back(he);
-                he = he->next();
+                if(this->id() == 285){
+                    std::cout<<"cell node: "<<he->node()->id()<<std::endl;
+                    std::cout<<"twin node: "<<he->twin()->node()->id()<<std::endl;
+                }
                 if (he->twin()->node()->id()==infty_id){
                     reached_infty = true;
                 }
-
-            } while(he != start and he != nullptr and he->next()!=nullptr and reached_infty);
+                he = he->next();  
+            } while(he != start and he != nullptr and !reached_infty);
 
             if (reached_infty){
-                halfedge_t* start_twin = start->twin();
-                halfedge_t* he = start_twin;
+                halfedge_t* he = start;
 
-                if (!start_twin or !start_twin->next()) return cell_edges;
 
-                he = he->next();
+                if (!start or !start->prev()) return cell_edges;
+
+                he = he->prev();
+                if(this->id() == 285){
+                    std::cout<<"cell node: "<<he->node()->id()<<std::endl;
+                    std::cout<<"twin node: "<<he->twin()->node()->id()<<std::endl;
+                }
 
                 do {
-                    cell_edges.push_back(he->twin());
-                    he = he->next();
+                    
+                    cell_edges.push_back(he);
 
-                } while(he != start_twin and he->twin() != nullptr and he->twin()->next()!=nullptr);
+                    // if(he->node()->id()==infty_id) break;
+                    if(he->node()->id()!=infty_id){
+                        he = he->prev();
+                    }
+
+                } while(he->node()->id()!=infty_id);
             }
+            std::cout<<"uffaaa"<<std::endl;
             
             return cell_edges;
         }

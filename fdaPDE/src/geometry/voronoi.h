@@ -90,9 +90,7 @@ class Voronoi {
 
     if (not_created_cells.size()>0){
 
-    for(int internal_id : not_created_cells){
-            std::cout << "Not created cell: " << internal_id << std::endl;}
-    std::vector<std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+    std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
 
         for(int internal_id : not_created_cells){
             cell_t curr_cell(internal_id);
@@ -596,13 +594,20 @@ class Voronoi {
     }
 
     std::vector<std::vector<int>> compute_v_cell2halfedges_(int infty_id){
-        std::vector<std::vector<int>> v_cell2halfedges(dcel_.n_cells());
+        std::map<int, std::vector<int>> v_cell2halfedges;
         for(auto cell_it = dcel_.cells_cbegin(); cell_it != dcel_.cells_cend(); ++cell_it){
             std::cout << "Cell ID: " << cell_it->id() << std::endl;
             std::vector<int> halfedges_vector;
-
-            for(auto v: cell_it->cell_edges_with_infty(infty_id)){
+            
+            if(!cell_it->is_unbounded()){
+                for(auto v: cell_it->cell_edges()){
                 halfedges_vector.push_back(v->id());
+                }
+            }
+            else{
+                for(auto v: cell_it->cell_edges_with_infty(infty_id)){
+                    halfedges_vector.push_back(v->id());
+                }
             }
 
             v_cell2halfedges[cell_it->id()] = halfedges_vector;

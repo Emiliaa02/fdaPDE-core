@@ -92,18 +92,19 @@ std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and "
 int i = 0;
 float sum=0;
 int unbdd=0;
-for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-	auto measure = it->measure();
+// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+// 	auto measure = it->measure();
 
-  i += 1;
-  if (measure != std::numeric_limits<double>::infinity()) {
-	sum+=measure;  
-  	std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
-}
-  if(it->is_unbounded()){
-    unbdd+=1;
-  }
-}
+//   i += 1;
+//   if (measure != std::numeric_limits<double>::infinity()) {
+// 	sum+=measure;  
+//   	std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
+// }
+//   if(it->is_unbounded()){
+//     unbdd+=1;
+//   }
+// }
+
 std::cout << "Printed area of " << i << " cells" << std::endl;
 std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
