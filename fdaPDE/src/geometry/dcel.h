@@ -219,7 +219,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
 
         std::vector<halfedge_t*> cell_edges_with_infty(int infty_id) const {
-            std::cout << "Entered function" << std::endl;
             std::vector<halfedge_t*> cell_edges;
             halfedge_t* start = this->halfedge();
             halfedge_t* he = start;
@@ -229,10 +228,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
             do {
                 cell_edges.push_back(he);
-                if(this->id() == 285){
-                    std::cout<<"cell node: "<<he->node()->id()<<std::endl;
-                    std::cout<<"twin node: "<<he->twin()->node()->id()<<std::endl;
-                }
                 if (he->twin()->node()->id()==infty_id){
                     reached_infty = true;
                 }
@@ -246,11 +241,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 if (!start or !start->prev()) return cell_edges;
 
                 he = he->prev();
-                if(this->id() == 285){
-                    std::cout<<"cell node: "<<he->node()->id()<<std::endl;
-                    std::cout<<"twin node: "<<he->twin()->node()->id()<<std::endl;
-                }
-
                 do {
                     
                     cell_edges.push_back(he);
@@ -262,7 +252,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
                 } while(he->node()->id()!=infty_id);
             }
-            std::cout<<"uffaaa"<<std::endl;
             
             return cell_edges;
         }

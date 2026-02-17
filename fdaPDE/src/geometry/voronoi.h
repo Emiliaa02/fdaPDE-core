@@ -90,7 +90,7 @@ class Voronoi {
 
     if (not_created_cells.size()>0){
 
-    std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+        std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
 
         for(int internal_id : not_created_cells){
             cell_t curr_cell(internal_id);
@@ -106,21 +106,23 @@ class Voronoi {
 
             // Vector with cell halfedges
             std::vector<int> v_cell_halfedges = v_cell2halfedges[neighbour_v_cell];
-
+            
             std::vector<int> v_vertexes = mesh.node_patch(internal_id);
-
             // ID of unique non infty v_vertex associated to this v_cell
-            assert(v_vertexes.size() == 1);
+            // assert(v_vertexes.size() == 1);
+            std::cout<<"Internal ID post: "<<internal_id<<std::endl;
             int v_vertex_id = v_vertexes[0];
             
             for(int halfedge_id : v_cell_halfedges){
                 auto to_infty = vertexes2halfedge[std::pair(v_vertex_id, infty_id)];
+                std::cout<<(to_infty == nullptr)<<std::endl;
                 auto from_infty = vertexes2halfedge[std::pair(infty_id, v_vertex_id)];
-                if(halfedge_id == to_infty->id()){
+                std::cout<<(from_infty == nullptr)<<std::endl;
+                if(to_infty and (halfedge_id == to_infty->id())){
                     curr_cell.set_halfedge(from_infty);
                     break;
                 }
-                else if(halfedge_id == from_infty->id()){
+                else if(from_infty and (halfedge_id == from_infty->id())){
                     curr_cell.set_halfedge(to_infty);
                     break;
                 }
@@ -593,10 +595,9 @@ class Voronoi {
     }
     }
 
-    std::vector<std::vector<int>> compute_v_cell2halfedges_(int infty_id){
+    std::map<int, std::vector<int>> compute_v_cell2halfedges_(int infty_id){
         std::map<int, std::vector<int>> v_cell2halfedges;
         for(auto cell_it = dcel_.cells_cbegin(); cell_it != dcel_.cells_cend(); ++cell_it){
-            std::cout << "Cell ID: " << cell_it->id() << std::endl;
             std::vector<int> halfedges_vector;
             
             if(!cell_it->is_unbounded()){
