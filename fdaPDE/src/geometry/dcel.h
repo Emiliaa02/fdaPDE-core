@@ -467,6 +467,8 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         j["cells"] = json::array();
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
+            std::cout << "\nCell ID: " << it->id() << std::endl;
+            std::cout << "\nCell halfedge ID: " << it->halfedge()->id() << std::endl;
             json cell;
             cell["id"] = it->id();
             cell["edges"] = json::array();
