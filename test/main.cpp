@@ -98,7 +98,7 @@ for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
   i += 1;
   if (measure != std::numeric_limits<double>::infinity()) {
 	sum+=measure;  
-  	std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
+  std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
 }
   if(it->is_unbounded()){
     unbdd+=1;

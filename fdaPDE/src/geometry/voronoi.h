@@ -47,7 +47,7 @@ class Voronoi {
     // Lookup for midpoints coordinates
     std::map<int, typename simplex_t::NodeType> midpoints_lookup;
     // Map that associates a pair of centroids to the halfedge that connects them
-    std::map<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
+    std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
     int cur_id = 0;
     // Structure to store cells without finite halfedges
     std::list<int> not_created_cells;
@@ -102,9 +102,11 @@ class Voronoi {
             }
             
             // Retreive one neighbour
-            int neighbour_v_cell = mesh.node_one_ring(internal_id)[0];
-
-            if(neighbour_v_cell == internal_id){
+            int neighbour_v_cell = 0;
+            if(internal_id != mesh.node_one_ring(internal_id)[0]){
+                neighbour_v_cell = mesh.node_one_ring(internal_id)[0];
+            }
+            else{
                 neighbour_v_cell = mesh.node_one_ring(internal_id)[1];
             }
 
@@ -114,22 +116,36 @@ class Voronoi {
             std::vector<int> v_vertexes = mesh.node_patch(internal_id);
             int v_vertex_id = old2new[v_vertexes[0]];
             
+            bool breaking_check = false;
+
             for(int halfedge_id : v_cell_halfedges){
-                auto to_infty = vertexes2halfedge[std::pair(v_vertex_id, infty_id)];
-                auto from_infty = vertexes2halfedge[std::pair(infty_id, v_vertex_id)];
-                if(to_infty and (halfedge_id == to_infty->id())){
-                    curr_cell.set_halfedge(from_infty);
-                    break;
+                auto to_infty_list = vertexes2halfedge.equal_range(std::make_pair(v_vertex_id, infty_id));
+                auto from_infty_list = vertexes2halfedge.equal_range(std::make_pair(infty_id, v_vertex_id));
+                for(auto to_infty = to_infty_list.first; to_infty != to_infty_list.second; ++to_infty){
+                    if(to_infty->second and (halfedge_id == to_infty->second->id())){
+                        curr_cell.set_halfedge(to_infty->second->twin());
+                        breaking_check = true;
+                        break;
+                    }
                 }
-                else if(from_infty and (halfedge_id == from_infty->id())){
-                    curr_cell.set_halfedge(to_infty);
-                    break;
+
+                if(breaking_check) break;
+
+                for(auto from_infty = from_infty_list.first; from_infty != from_infty_list.second; ++from_infty){
+                    if(from_infty->second and (halfedge_id == from_infty->second->id())){
+                        curr_cell.set_halfedge(from_infty->second->twin());
+                        breaking_check = true;
+                        break;
+                    }
                 }
+
+                if(breaking_check) break;
             }
 
             cells_.push_back(curr_cell);
             dcel_.insert_cell(curr_cell);
-        }}
+        }
+    }
 
     std::map<int, typename dcel_t::halfedge_t*> halfedges_map;
     for(auto it = dcel_.halfedges_begin(); it != dcel_.halfedges_end(); ++it){
@@ -152,7 +168,6 @@ class Voronoi {
         to_infty->set_next(from_infty);
         from_infty->set_prev(to_infty);
     }
-    
 
     std::cout << "\nFinished constructor" << std::endl;
     }
@@ -412,7 +427,7 @@ class Voronoi {
                             std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                             // std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                             const std::vector<int>& ordered_neigh_ids,
-                            std::map<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge) {
+                            std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge) {
                  
         int count_existing_neigh = 0;
         // Keep the first halfedge
@@ -449,7 +464,7 @@ class Voronoi {
             }
 
             // If neighbouring cell was not visited, its node needs an halfedge
-            if (twin_node->neighID2halfedge(v_vertex_id)==nullptr){
+            if ((twin_node->neighID2halfedge(v_vertex_id)==nullptr) or (neigh_id == infty_id)){
                 // Set IDs based on counter
                 cell_halfedge = dcel_.emplace_halfedge(v_vertex);
                 twin_halfedge = dcel_.emplace_halfedge(twin_node);
@@ -465,8 +480,8 @@ class Voronoi {
                 // Update lookup
                 v_vertex->add_halfedge(neigh_id, cell_halfedge);
                 twin_node->add_halfedge(v_vertex_id, twin_halfedge);
-                vertexes2halfedge[std::make_pair<int, int>(v_vertex->id(), twin_node->id())] = cell_halfedge;
-                vertexes2halfedge[std::make_pair<int, int>(twin_node->id(), v_vertex->id())] = twin_halfedge;
+                vertexes2halfedge.insert({std::make_pair(v_vertex->id(), twin_node->id()), cell_halfedge});
+                vertexes2halfedge.insert({std::make_pair(twin_node->id(), v_vertex->id()), twin_halfedge});
             }
             // If neighbouring cell was visited, only retrieve the halfedges
             else{
@@ -509,7 +524,7 @@ class Voronoi {
                         std::vector<int>& d_centroid2v_vertex,
                         std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                         const Eigen::Matrix<int, Eigen::Dynamic, 1>& neighbor_simplexes,
-                        std::map<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge,
+                        std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge,
                         std::list<int>& not_created_cells) {
         
         int count_neigh_tria = 0;
@@ -562,8 +577,8 @@ class Voronoi {
                     typename simplex_t::NodeType v = neigh_v_vertex - d_vertex;
                     // Compute the cross product to assign the halfedges properly 
                     double cross = u(0)*v(1)-u(1)*v(0);
-                    typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge[std::make_pair(v_vertex_id, neigh_v_vertex_id)];
-                    typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge[std::make_pair(neigh_v_vertex_id, v_vertex_id)];
+                    typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge.find(std::make_pair(v_vertex_id, neigh_v_vertex_id))->second;
+                    typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge.find(std::make_pair(neigh_v_vertex_id, v_vertex_id))->second;
 
                     if (mesh.is_node_on_boundary(idx)){
                         curr_cell.set_unbounded();
