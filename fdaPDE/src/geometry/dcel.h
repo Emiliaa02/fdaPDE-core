@@ -218,13 +218,14 @@ template <int LocalDim, int EmbedDim> class DCEL {
             return cell_edges;
         }
 
-        std::vector<halfedge_t*> cell_edges_with_infty(int infty_id) const {
+        std::vector<halfedge_t*> cell_edges_with_infty(int infty_id, bool print) const {
             std::vector<halfedge_t*> cell_edges;
             halfedge_t* start = this->halfedge();
             halfedge_t* he = start;
             bool reached_infty = false;
 
-            if (!start or !start->next()) return cell_edges;
+            // if (!start or !start->next()) return cell_edges;
+            if (!start or !start->next()) reached_infty=true;
 
             do {
                 cell_edges.push_back(he);

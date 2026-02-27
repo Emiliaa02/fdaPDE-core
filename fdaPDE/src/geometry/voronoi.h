@@ -127,6 +127,7 @@ class Voronoi {
                     if(to_infty->second and (halfedge_id == to_infty->second->id())){
                         curr_cell.set_halfedge(to_infty->second->twin());
                         breaking_check = true;
+                        std::cout << "Cell ID: " << internal_id << " FROM infinity" << std::endl;
                         break;
                     }
                 }
@@ -137,6 +138,7 @@ class Voronoi {
                     if(from_infty->second and (halfedge_id == from_infty->second->id())){
                         curr_cell.set_halfedge(from_infty->second->twin());
                         breaking_check = true;
+                        std::cout << "Cell ID: " << internal_id << " TO infinity. Has prev? " << (from_infty->second->twin()->prev()->id()) << std::endl;
                         break;
                     }
                 }
@@ -149,6 +151,11 @@ class Voronoi {
             dcel_.insert_cell(curr_cell);
         }
     }
+
+    v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+
+    std::cout << "Size is: " << v_cell2halfedges[288].size() << std::endl;
+    for(auto whatever: v_cell2halfedges[272]){std::cout << whatever << std::endl;}
 
     std::map<int, typename dcel_t::halfedge_t*> halfedges_map;
     for(auto it = dcel_.halfedges_begin(); it != dcel_.halfedges_end(); ++it){
@@ -635,6 +642,8 @@ class Voronoi {
         std::map<int, std::vector<int>> v_cell2halfedges;
         for(auto cell_it = dcel_.cells_cbegin(); cell_it != dcel_.cells_cend(); ++cell_it){
             std::vector<int> halfedges_vector;
+
+            if(cell_it->id()==272) std::cout << "Is 272 unbounded? " << (cell_it->is_unbounded()) << std::endl;
             
             if(!cell_it->is_unbounded()){
                 for(auto v: cell_it->cell_edges()){
@@ -642,7 +651,8 @@ class Voronoi {
                 }
             }
             else{
-                for(auto v: cell_it->cell_edges_with_infty(infty_id)){
+                if(cell_it->id()==272) cell_it->cell_edges_with_infty(infty_id, true);
+                for(auto v: cell_it->cell_edges_with_infty(infty_id, false)){
                     halfedges_vector.push_back(v->id());
                 }
             }
