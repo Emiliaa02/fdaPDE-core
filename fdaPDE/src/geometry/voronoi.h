@@ -77,9 +77,12 @@ class Voronoi {
                                                                     centroid_lookup, midpoints_lookup);
         
         // Create and connect the halfedges
-        create_and_connect_halfedges_(dcel_, cell_id, infty_id, infty_node, visited_centroids, 
-                                    centroid_lookup, ordered_neigh_ids, vertexes2halfedge);
-
+        if(!visited_centroids[cell_id]){
+            create_and_connect_halfedges_(dcel_, cell_id, infty_id, infty_node, centroid_lookup, 
+                                        ordered_neigh_ids, vertexes2halfedge);
+            // Set the centroid as visited
+            visited_centroids[cell_id] = true;
+        }
 
         auto neighbor_simplexes = it->neighbors();
         // Create cells
@@ -109,7 +112,6 @@ class Voronoi {
             else{
                 neighbour_v_cell = mesh.node_one_ring(internal_id)[1];
             }
-
             // Vector with cell halfedges
             std::vector<int> v_cell_halfedges = v_cell2halfedges[neighbour_v_cell];
             
@@ -138,6 +140,7 @@ class Voronoi {
                         break;
                     }
                 }
+
 
                 if(breaking_check) break;
             }
@@ -423,7 +426,6 @@ class Voronoi {
     void create_and_connect_halfedges_(dcel_t& dcel_, 
                             int v_vertex_id, int infty_id,
                             typename dcel_t::node_t* infty_node,
-                            std::vector<bool>& visited_v_vertex,
                             std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                             // std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                             const std::vector<int>& ordered_neigh_ids,
@@ -490,9 +492,7 @@ class Voronoi {
                 twin_halfedge = (twin_node->neighID2halfedge(v_vertex_id));
                 cell_halfedge = (twin_halfedge->twin());
             }
-        
-            // Set the current cell as visited
-            visited_v_vertex[v_vertex_id] = true;
+
             // Set previous and next
             e2 = cell_halfedge;  
 
