@@ -468,6 +468,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         j["cells"] = json::array();
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
+            // std::cout<<"\nCell ID: "<<it->id()<<" is unbounded? "<< it->is_unbounded()<<std::endl;
             json cell;
             cell["id"] = it->id();
             cell["edges"] = json::array();

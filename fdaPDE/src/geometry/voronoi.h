@@ -91,93 +91,11 @@ class Voronoi {
     
     }
 
-    std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+    // Add to the DCEL structure the not created cells
+    add_not_created_cells_(infty_id, not_created_cells, mesh, old2new, vertexes2halfedge);
 
-    if (not_created_cells.size()>0){
-
-        for(int internal_id : not_created_cells){
-            cell_t curr_cell(internal_id);
-            if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end()){
-                continue;
-            }
-            if (mesh.is_node_on_boundary(internal_id)){
-                curr_cell.set_unbounded();
-            }
-            
-            // Retreive one neighbour
-            int neighbour_v_cell = 0;
-            if(internal_id != mesh.node_one_ring(internal_id)[0]){
-                neighbour_v_cell = mesh.node_one_ring(internal_id)[0];
-            }
-            else{
-                neighbour_v_cell = mesh.node_one_ring(internal_id)[1];
-            }
-            // Vector with cell halfedges
-            std::vector<int> v_cell_halfedges = v_cell2halfedges[neighbour_v_cell];
-            
-            std::vector<int> v_vertexes = mesh.node_patch(internal_id);
-            int v_vertex_id = old2new[v_vertexes[0]];
-            
-            bool breaking_check = false;
-
-            for(int halfedge_id : v_cell_halfedges){
-                auto to_infty_list = vertexes2halfedge.equal_range(std::make_pair(v_vertex_id, infty_id));
-                auto from_infty_list = vertexes2halfedge.equal_range(std::make_pair(infty_id, v_vertex_id));
-                for(auto to_infty = to_infty_list.first; to_infty != to_infty_list.second; ++to_infty){
-                    if(to_infty->second and (halfedge_id == to_infty->second->id())){
-                        curr_cell.set_halfedge(to_infty->second->twin());
-                        breaking_check = true;
-                        std::cout << "Cell ID: " << internal_id << " FROM infinity" << std::endl;
-                        break;
-                    }
-                }
-
-                if(breaking_check) break;
-
-                for(auto from_infty = from_infty_list.first; from_infty != from_infty_list.second; ++from_infty){
-                    if(from_infty->second and (halfedge_id == from_infty->second->id())){
-                        curr_cell.set_halfedge(from_infty->second->twin());
-                        breaking_check = true;
-                        std::cout << "Cell ID: " << internal_id << " TO infinity. Has prev? " << (from_infty->second->twin()->prev()->id()) << std::endl;
-                        break;
-                    }
-                }
-
-
-                if(breaking_check) break;
-            }
-
-            cells_.push_back(curr_cell);
-            dcel_.insert_cell(curr_cell);
-        }
-    }
-
-    v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
-
-    std::cout << "Size is: " << v_cell2halfedges[288].size() << std::endl;
-    for(auto whatever: v_cell2halfedges[272]){std::cout << whatever << std::endl;}
-
-    std::map<int, typename dcel_t::halfedge_t*> halfedges_map;
-    for(auto it = dcel_.halfedges_begin(); it != dcel_.halfedges_end(); ++it){
-        halfedges_map[it->id()] = &(*it);
-    }
-
-    for (const auto& [v_cell_id, halfedges_ids] : v_cell2halfedges) {
-        typename dcel_t::halfedge_t* from_infty;
-        typename dcel_t::halfedge_t* to_infty;
-        for (int halfedge_id : halfedges_ids) {
-            typename dcel_t::halfedge_t* cur_halfedge = halfedges_map[halfedge_id];
-            if (cur_halfedge->node()->id()==infty_id){
-                from_infty = cur_halfedge;
-            }
-            else if (cur_halfedge->twin()->node()->id()==infty_id){
-                to_infty = cur_halfedge;
-            }
-        }
-
-        to_infty->set_next(from_infty);
-        from_infty->set_prev(to_infty);
-    }
+    // Connect the infinity halfedges
+    connect_infty_halfedges_(infty_id);
 
     std::cout << "\nFinished constructor" << std::endl;
     }
@@ -642,8 +560,6 @@ class Voronoi {
         std::map<int, std::vector<int>> v_cell2halfedges;
         for(auto cell_it = dcel_.cells_cbegin(); cell_it != dcel_.cells_cend(); ++cell_it){
             std::vector<int> halfedges_vector;
-
-            if(cell_it->id()==272) std::cout << "Is 272 unbounded? " << (cell_it->is_unbounded()) << std::endl;
             
             if(!cell_it->is_unbounded()){
                 for(auto v: cell_it->cell_edges()){
@@ -651,7 +567,7 @@ class Voronoi {
                 }
             }
             else{
-                if(cell_it->id()==272) cell_it->cell_edges_with_infty(infty_id, true);
+                // if(cell_it->id()==272) cell_it->cell_edges_with_infty(infty_id, true);
                 for(auto v: cell_it->cell_edges_with_infty(infty_id, false)){
                     halfedges_vector.push_back(v->id());
                 }
@@ -662,6 +578,98 @@ class Voronoi {
 
         return v_cell2halfedges;
     }
+
+
+    void add_not_created_cells_(int infty_id, std::list<int>& not_created_cells,
+                                const Triangulation<local_dim, embed_dim>& mesh,
+                                std::vector<int>& d_centroid2v_vertex,
+                                std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge){
+
+        std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+
+        if (not_created_cells.size()>0){
+
+            for(int internal_id : not_created_cells){
+                cell_t curr_cell(internal_id);
+                if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end()){
+                    continue;
+                }
+                if (mesh.is_node_on_boundary(internal_id)){
+                    curr_cell.set_unbounded();
+                }
+                
+                // Retreive one neighbour
+                int neighbour_v_cell = 0;
+                if(internal_id != mesh.node_one_ring(internal_id)[0]){
+                    neighbour_v_cell = mesh.node_one_ring(internal_id)[0];
+                }
+                else{
+                    neighbour_v_cell = mesh.node_one_ring(internal_id)[1];
+                }
+                // Vector with cell halfedges
+                std::vector<int> v_cell_halfedges = v_cell2halfedges[neighbour_v_cell];
+                
+                std::vector<int> v_vertexes = mesh.node_patch(internal_id);
+                int v_vertex_id = d_centroid2v_vertex[v_vertexes[0]];
+                
+                bool breaking_check = false;
+
+                for(int halfedge_id : v_cell_halfedges){
+                    auto to_infty_list = vertexes2halfedge.equal_range(std::make_pair(v_vertex_id, infty_id));
+                    auto from_infty_list = vertexes2halfedge.equal_range(std::make_pair(infty_id, v_vertex_id));
+                    for(auto to_infty = to_infty_list.first; to_infty != to_infty_list.second; ++to_infty){
+                        if(to_infty->second and (halfedge_id == to_infty->second->id())){
+                            curr_cell.set_halfedge(to_infty->second->twin());
+                            breaking_check = true;
+                            break;
+                        }
+                    }
+
+                    if(breaking_check) break;
+
+                    for(auto from_infty = from_infty_list.first; from_infty != from_infty_list.second; ++from_infty){
+                        if(from_infty->second and (halfedge_id == from_infty->second->id())){
+                            curr_cell.set_halfedge(from_infty->second->twin());
+                            breaking_check = true;
+                            break;
+                        }
+                    }
+
+                    if(breaking_check) break;
+                }
+
+                cells_.push_back(curr_cell);
+                dcel_.insert_cell(curr_cell);
+            }
+        }
+    }
+
+
+    void connect_infty_halfedges_(int infty_id){
+        std::map<int, std::vector<int>> v_cell2halfedges = compute_v_cell2halfedges_(infty_id);
+
+        std::map<int, typename dcel_t::halfedge_t*> halfedges_map;
+        for(auto it = dcel_.halfedges_begin(); it != dcel_.halfedges_end(); ++it){
+            halfedges_map[it->id()] = &(*it);
+        }
+
+        for (const auto& [v_cell_id, halfedges_ids] : v_cell2halfedges) {
+            typename dcel_t::halfedge_t* from_infty;
+            typename dcel_t::halfedge_t* to_infty;
+            for (int halfedge_id : halfedges_ids) {
+                typename dcel_t::halfedge_t* cur_halfedge = halfedges_map[halfedge_id];
+                if (cur_halfedge->node()->id()==infty_id){
+                    from_infty = cur_halfedge;
+                }
+                else if (cur_halfedge->twin()->node()->id()==infty_id){
+                    to_infty = cur_halfedge;
+                }
+            }
+
+            to_infty->set_next(from_infty);
+            from_infty->set_prev(to_infty);
+        }
+    }   
 
     // List of cells
     std::list<typename dcel_t::cell_t> cells_;

@@ -79,7 +79,7 @@ int main() {
 Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 
 Voronoi<2, 2> voronoi_obj(mesh);
-// std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
+std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
 int n_nodes = voronoi_obj.n_nodes();
 int n_edges = voronoi_obj.n_edges();
@@ -98,18 +98,16 @@ for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
   i += 1;
   if (measure != std::numeric_limits<double>::infinity()) {
 	sum+=measure;  
-  // std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
+  std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
 }
   if(it->is_unbounded()){
     unbdd+=1;
   }
 }
 
-// std::cout << "Printed area of " << i << " cells" << std::endl;
-// std::cout << "Area " << sum <<std::endl;
-// std::cout << "Unbounded " << unbdd << std::endl;
-
-
+std::cout << "Printed area of " << i << " cells" << std::endl;
+std::cout << "Area " << sum <<std::endl;
+std::cout << "Unbounded " << unbdd << std::endl;
 
 
 voronoi_obj.export_to_json("plots/data/unit_square_16.json");
