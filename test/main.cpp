@@ -76,7 +76,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/quasi_circle/points.csv", "data/mesh/quasi_circle/elements.csv", "data/mesh/quasi_circle/boundary.csv", true, true);
 
 Voronoi<2, 2> voronoi_obj(mesh);
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
@@ -95,9 +95,9 @@ int unbdd=0;
 for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
 	auto measure = it->measure();
 
-  i += 1;
   if (measure != std::numeric_limits<double>::infinity()) {
 	sum+=measure;  
+  i += 1;
   std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
 }
   if(it->is_unbounded()){
@@ -110,7 +110,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 
-voronoi_obj.export_to_json("plots/data/unit_square_16.json");
+voronoi_obj.export_to_json("plots/data/quasi_circle.json");
 
 return 0;
 }

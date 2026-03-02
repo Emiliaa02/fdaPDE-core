@@ -563,11 +563,10 @@ class Voronoi {
             
             if(!cell_it->is_unbounded()){
                 for(auto v: cell_it->cell_edges()){
-                halfedges_vector.push_back(v->id());
+                    halfedges_vector.push_back(v->id());
                 }
             }
             else{
-                // if(cell_it->id()==272) cell_it->cell_edges_with_infty(infty_id, true);
                 for(auto v: cell_it->cell_edges_with_infty(infty_id, false)){
                     halfedges_vector.push_back(v->id());
                 }

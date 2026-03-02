@@ -223,8 +223,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             halfedge_t* start = this->halfedge();
             halfedge_t* he = start;
             bool reached_infty = false;
-
-            // if (!start or !start->next()) return cell_edges;
+            //if (!start or !start->next()) return cell_edges;
             if (!start or !start->next()) reached_infty=true;
 
             do {
@@ -237,23 +236,23 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
             if (reached_infty){
                 halfedge_t* he = start;
-
+                bool break_condition = false;
 
                 if (!start or !start->prev()) return cell_edges;
 
                 he = he->prev();
                 do {
-                    
                     cell_edges.push_back(he);
 
-                    // if(he->node()->id()==infty_id) break;
                     if(he->node()->id()!=infty_id){
                         he = he->prev();
                     }
+                    else{
+                        break_condition = true;
+                    }
 
-                } while(he->node()->id()!=infty_id);
+                } while(!break_condition);
             }
-            
             return cell_edges;
         }
 
@@ -468,7 +467,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         j["cells"] = json::array();
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
-            // std::cout<<"\nCell ID: "<<it->id()<<" is unbounded? "<< it->is_unbounded()<<std::endl;
             json cell;
             cell["id"] = it->id();
             cell["edges"] = json::array();
