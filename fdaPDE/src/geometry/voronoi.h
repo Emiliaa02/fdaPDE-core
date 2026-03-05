@@ -424,6 +424,12 @@ class Voronoi {
             if (count_existing_neigh != 0){
                 e1->twin()->set_next(e2);
                 e2->set_prev(e1->twin());
+                if(v_vertex_id == 325){
+                    std::cout<<"e2 id: "<<e2->id()<<std::endl;
+                    std::cout<<"e2 twin id: "<<e2->twin()->id()<<std::endl;
+                    std::cout<<"e1 id: "<<e1->id()<<std::endl;
+                    std::cout<<"e1 twin id: "<<e1->twin()->id()<<std::endl;
+                }
             }
             else{
                 first_halfedge = cell_halfedge;
