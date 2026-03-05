@@ -560,7 +560,6 @@ class Voronoi {
         std::map<int, std::vector<int>> v_cell2halfedges;
         for(auto cell_it = dcel_.cells_cbegin(); cell_it != dcel_.cells_cend(); ++cell_it){
             std::vector<int> halfedges_vector;
-            
             if(!cell_it->is_unbounded()){
                 for(auto v: cell_it->cell_edges()){
                     halfedges_vector.push_back(v->id());
