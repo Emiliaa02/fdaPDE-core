@@ -46,6 +46,7 @@ class Voronoi {
     std::vector<int> first_id_lookup(n_mesh_faces);
     // Lookup for midpoints coordinates
     std::map<int, typename simplex_t::NodeType> midpoints_lookup;
+    std::map<int, typename simplex_t::NodeType> midpoints_lookup_raw;
     // Map that associates a pair of centroids to the halfedge that connects them
     std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
     int cur_id = 0;
@@ -57,6 +58,7 @@ class Voronoi {
                                                                                 old2new, 
                                                                                 centroid_lookup,
                                                                                 midpoints_lookup,
+                                                                                midpoints_lookup_raw,
                                                                                 cur_id);
 
     // Define infinity v_vertex and add it to DCEL
@@ -139,8 +141,10 @@ class Voronoi {
     dcel_t dcel_;
 
     // Internal function for computing v_vertex neighbours
-    std::vector<int> compute_neighbours_(const triangle_t& d_simplex, 
+    std::vector<int> compute_neighbours_(const Triangulation<local_dim, embed_dim>& mesh,
+        const triangle_t& d_simplex, 
         std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
+        std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
         int& cur_midpoint_id,
         bool print){
                                         
@@ -163,6 +167,46 @@ class Voronoi {
                     auto mp = d_simplex_edge -> compute_midpoint();
 
                     // ... and create a new midpoint index
+                    midpoints_lookup_raw[cur_midpoint_id] = mp;
+
+                    // Retrieve centroid
+                    auto centroid_ = d_simplex.circumcenter();
+
+                    // Get d_simplex vertexes ids
+                    Eigen::Matrix<int, Eigen::Dynamic, 1> d_simplex_vertexes_ids = d_simplex.node_ids();
+
+                    typename simplex_t::NodeType in_vertex_coords;
+                    std::vector<typename simplex_t::NodeType> boundary_vertex_coords;
+
+                    // Loop over d_vertexes of this d_simplex
+                    for(auto d_simplex_vertex_id : d_simplex_vertexes_ids){
+
+                        // Vertex coords
+                        auto d_simplex_vertex_coords = mesh.node(d_simplex_vertex_id);
+
+                        if(mesh.is_node_on_boundary(d_simplex_vertex_id)){
+                            boundary_vertex_coords.push_back(d_simplex_vertex_coords);
+                        }
+                        else{
+                            in_vertex_coords = d_simplex_vertex_coords;
+                        }
+
+                    }
+
+                    // Create vectors
+                    typename simplex_t::NodeType v0, v1;
+                    v0 = boundary_vertex_coords[0] - in_vertex_coords;
+                    v1 = boundary_vertex_coords[1] - in_vertex_coords;
+
+                    // Compute scalar product
+                    float sp = v0(0)*v1(0) + v0(1)*v1(1);
+
+                    // If scalar product negative, angle is > 90 -> change midpoint position
+                    if(sp < 0){
+                        mp(0) = 2*centroid_(0) - mp(0);
+                        mp(1) = 2*centroid_(1) - mp(1);
+                    }
+
                     midpoints_lookup[cur_midpoint_id] = mp;
 
                     // Add in the added midpoint ids
@@ -208,6 +252,7 @@ class Voronoi {
                             std::vector<int>& d_centroid2v_vertex, 
                             std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                             std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
+                            std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
                             int& cur_id){
 
         // Number of faces in the mesh
@@ -232,7 +277,7 @@ class Voronoi {
             typename simplex_t::NodeType d_centroid = d_simplex_it->circumcenter();
 
             // Compute neighbours
-            std::vector<int> neigh_vec = compute_neighbours_(*(d_simplex_it), midpoints_lookup, cur_midpoint_id, false);
+            std::vector<int> neigh_vec = compute_neighbours_(mesh, *(d_simplex_it), midpoints_lookup, midpoints_lookup_raw, cur_midpoint_id, false);
 
             // Check whether d_centroid is already associated to a v_vertex
             int v_vertex_id = v_vertex_from_d_centroid_(v_vertex_lookup, d_centroid);
