@@ -136,6 +136,10 @@ class Voronoi {
         this->dcel_.export_to_json(filename);
     }
 
+    void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh){
+        
+    }
+
 
     private:
     dcel_t dcel_;
@@ -168,6 +172,9 @@ class Voronoi {
 
                     // ... and create a new midpoint index
                     midpoints_lookup_raw[cur_midpoint_id] = mp;
+
+                    // update midpoint id to edge map id
+                    midpoint_to_edge_[cur_midpoint_id] = d_simplex_edge->id();
 
                     // Retrieve centroid
                     auto centroid_ = d_simplex.circumcenter();
@@ -409,6 +416,10 @@ class Voronoi {
         typename dcel_t::halfedge_t* e2 = nullptr;
         // Loop over neighbouring cells
         for (auto neigh_id : ordered_neigh_ids) {
+            // flag for infinity node
+            bool is_infinity = false;
+            // id for computing the midpoint id
+            int mid_id = 0;
             // Create cell node
             typename dcel_t::node_t* v_vertex;
             // Find nodes in the DCEL structure
@@ -431,8 +442,10 @@ class Voronoi {
             }
             else{
                 // The centroid of the neighbouring cell is the infinity node
+                mid_id = neigh_id;
                 neigh_id = infty_id;
                 twin_node = infty_node;
+                is_infinity = true;
             }
 
             // If neighbouring cell was not visited, its node needs an halfedge
@@ -454,6 +467,10 @@ class Voronoi {
                 twin_node->add_halfedge(v_vertex_id, twin_halfedge);
                 vertexes2halfedge.insert({std::make_pair(v_vertex->id(), twin_node->id()), cell_halfedge});
                 vertexes2halfedge.insert({std::make_pair(twin_node->id(), v_vertex->id()), twin_halfedge});
+
+                // Update intersection d_edges map
+                intersection_d_edges_[cell_halfedge->id()]= midpoint_to_edge_.at(mid_id);
+                intersection_d_edges_[twin_halfedge->id()] = midpoint_to_edge_.at(mid_id);
             }
             // If neighbouring cell was visited, only retrieve the halfedges
             else{
@@ -469,12 +486,6 @@ class Voronoi {
             if (count_existing_neigh != 0){
                 e1->twin()->set_next(e2);
                 e2->set_prev(e1->twin());
-                if(v_vertex_id == 325){
-                    std::cout<<"e2 id: "<<e2->id()<<std::endl;
-                    std::cout<<"e2 twin id: "<<e2->twin()->id()<<std::endl;
-                    std::cout<<"e1 id: "<<e1->id()<<std::endl;
-                    std::cout<<"e1 twin id: "<<e1->twin()->id()<<std::endl;
-                }
             }
             else{
                 first_halfedge = cell_halfedge;
@@ -722,6 +733,10 @@ class Voronoi {
 
     // List of cells
     std::list<typename dcel_t::cell_t> cells_;
+    // Midpoint id to egde id
+    std::map<int, int> midpoint_to_edge_;
+    // Intersection d_edges
+    std::map<int, int> intersection_d_edges_;
 };
 
 }
