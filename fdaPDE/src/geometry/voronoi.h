@@ -140,6 +140,70 @@ class Voronoi {
         
     }
 
+    // What the following function does is understand which v_cells are on the boundary
+    // and compile supplementary_points[v_cell_id]: for each v_cell, it assigns, if it is on boundary,
+    // the supplementary points we will have to consider in order to have it clipped.
+    // In the clipping phase, all we have to do is:
+    // - Order supplementary points + already existing points in counterclockwise order;
+    // - Following the order, if halfedge n1->n2 already exists, OK
+    // - Else, create n1->n2, removing the appropriate halfedges in the DCEL
+    void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh){
+
+
+        // Loop over mesh boundary edges of the Delaunay
+        for (auto d_boundary_edge: d_boundary_edges)
+
+            // Find closest v_centroid to d_edge_midpoint
+            auto closest_v_centroid = ...;
+
+            // Initialize list of v_cells to check
+            to_check_v_cells = [closest_v_centroid];
+
+            // While list to check is not empty
+            while (to_check_v_cells.size() > 0){
+                cur_v_centroid = to_check_v_cells[0];
+
+                // Loop over cur_v_cell halfedges
+                for (auto cur_halfedge: cur_v_cell_halfedges)
+
+                    // If we already know halfedge intersects boundary edge (necessarily on the midpoint)...
+                    if (intersection_d_edges_.at(cur_halfedge->id()) == d_boundary_edge->id())
+
+                        // cur_v_cell is boundary cell
+                        on_boundary[cur_v_cell->id()] = true;
+
+                        // Add to cur_v_cell the midpoint
+                        supplementary_points[cur_v_cell->id()].append(midpoints_lookup.at( considered_midpoint ));
+
+                        // Add to list neighbouring v_cell
+                        to_check_v_cells.append[cur_halfedge->twin()->cell()];
+
+                    // ... otherwise
+                    else    
+
+                        // Check whether halfedge and boundary edge intersect in a point
+                        point_type inters_point check_intersection(cur_halfedge, d_boundary_edge);
+
+                        // If you found it...
+                        if inters_point != nullptr  
+
+                            // cur_v_cell is boundary cell
+                            on_boundary[cur_v_cell->id()] = true;
+
+                            // Add to cur_v_cell the point
+                            supplementary_points[cur_v_cell->id()].append(inters_point);
+
+                            // Add to list neighbouring v_cell
+                            to_check_v_cells.append[cur_halfedge->twin()->cell()];
+
+                // Remove from list current cell
+                to_check_v_cells.remove(cur_v_centroid)
+            }
+
+        return supplementary_points, on_boundary;
+
+    }
+
 
     private:
     dcel_t dcel_;
@@ -469,8 +533,9 @@ class Voronoi {
                 vertexes2halfedge.insert({std::make_pair(twin_node->id(), v_vertex->id()), twin_halfedge});
 
                 // Update intersection d_edges map
-                intersection_d_edges_[cell_halfedge->id()]= midpoint_to_edge_.at(mid_id);
-                intersection_d_edges_[twin_halfedge->id()] = midpoint_to_edge_.at(mid_id);
+                if((is_infinity) and midpoints_lookup_raw.at(mid_id)==midpoints_lookup.at(mid_id)){
+                    intersection_d_edges_[cell_halfedge->id()]= midpoint_to_edge_.at(mid_id);
+                    intersection_d_edges_[twin_halfedge->id()] = midpoint_to_edge_.at(mid_id);}
             }
             // If neighbouring cell was visited, only retrieve the halfedges
             else{
