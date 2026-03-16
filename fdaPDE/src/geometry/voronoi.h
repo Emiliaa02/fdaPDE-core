@@ -147,35 +147,47 @@ class Voronoi {
     // - Order supplementary points + already existing points in counterclockwise order;
     // - Following the order, if halfedge n1->n2 already exists, OK
     // - Else, create n1->n2, removing the appropriate halfedges in the DCEL
-    void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh){
-
+    void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, int infty_id){
 
         // Loop over mesh boundary edges of the Delaunay
-        for (auto d_boundary_edge: d_boundary_edges)
+        for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); d_boundary_edge++){
 
             // Find closest v_centroid to d_edge_midpoint
-            auto closest_v_centroid = ...;
+            auto current_midpoint = d_boundary_edge->compute_midpoint();
+            auto closest_v_centroid = find_closest_v_centroid(mesh, current_midpoint);
 
             // Initialize list of v_cells to check
             to_check_v_cells = [closest_v_centroid];
+
+            // Compute the v_cell2halfedges structure
+            std::map<int, std::vector<int>> v_cell_halfedges = compute_v_cell2halfedges_(infty_id);
 
             // While list to check is not empty
             while (to_check_v_cells.size() > 0){
                 cur_v_centroid = to_check_v_cells[0];
 
+                std::vector<int> cur_v_cell_halfedges = v_cell_halfedges.at(cur_v_centroid->id())
+
                 // Loop over cur_v_cell halfedges
-                for (auto cur_halfedge: cur_v_cell_halfedges)
+                for (int cur_halfedge_id: cur_v_cell_halfedges)
 
                     // If we already know halfedge intersects boundary edge (necessarily on the midpoint)...
-                    if (intersection_d_edges_.at(cur_halfedge->id()) == d_boundary_edge->id())
+                    if (intersection_d_edges_.at(cur_halfedge_id) == d_boundary_edge->id())
 
                         // cur_v_cell is boundary cell
-                        on_boundary[cur_v_cell->id()] = true;
+                        on_boundary[cur_v_centroid->id()] = true;
 
                         // Add to cur_v_cell the midpoint
-                        supplementary_points[cur_v_cell->id()].append(midpoints_lookup.at( considered_midpoint ));
+                        supplementary_points[cur_v_centroid->id()].append(midpoints_lookup.at( considered_midpoint ));
 
                         // Add to list neighbouring v_cell
+                        typename dcel_t::halfedge_t cur_halfedge;
+                        for(auto it = this->dcel_.halfedges_begin(); it =! this->dcel_.halfedges_begin(); ++it){
+                            if(it->id() == cur_halfedge_id){
+                                cur_halfedge = *it;
+                                break;
+                            }
+                        }
                         to_check_v_cells.append[cur_halfedge->twin()->cell()];
 
                     // ... otherwise
@@ -188,10 +200,10 @@ class Voronoi {
                         if inters_point != nullptr  
 
                             // cur_v_cell is boundary cell
-                            on_boundary[cur_v_cell->id()] = true;
+                            on_boundary[cur_v_centroid->id()] = true;
 
                             // Add to cur_v_cell the point
-                            supplementary_points[cur_v_cell->id()].append(inters_point);
+                            supplementary_points[cur_v_centroid->id()].append(inters_point);
 
                             // Add to list neighbouring v_cell
                             to_check_v_cells.append[cur_halfedge->twin()->cell()];
@@ -199,11 +211,43 @@ class Voronoi {
                 // Remove from list current cell
                 to_check_v_cells.remove(cur_v_centroid)
             }
-
+        
+        }
         return supplementary_points, on_boundary;
 
     }
 
+    typename dcel_t::cell_t find_closest_v_centroid(const Triangulation<local_dim, embed_dim>& mesh, 
+                                                    Eigen::Matrix<double, 2, 1> midpoint){
+            
+        // Phisical coordinates of mesh vertices
+        Eigen::Matrix<double, Dynamic, Dynamic> nodes = mesh.nodes();
+
+        int best_v_centroid_id = 0;
+        double best_distance = euclidean_distance(midpoint(0), midpoint(1), nodes.row(0), nodes.row(1));
+
+        for(int i=1; i<nodes.shape[0]; ++i){
+            double current_distance = euclidean_distance(midpoint(0), midpoint(1), nodes.row(i), nodes.row(i));
+            if(current_distance < best_distance){
+                best_distance = current_distance;
+                best_v_centroid_id = i;
+            }
+        }
+
+        typename dcel_t::cell_t best_cell;
+
+        for(auto it = this->dcel_.cells_begin(); it =! this->dcel_.cells_end();; ++it){
+            if(it->id() == best_v_centroid_id){
+                best_cell = (*it);
+                return best_cell
+            }
+        }
+    }
+
+
+    double euclidean_distance(double x1, double y1, double x2, double y2) {
+        return std::sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
+    }
 
     private:
     dcel_t dcel_;
