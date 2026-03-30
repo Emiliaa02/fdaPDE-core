@@ -52,6 +52,8 @@ class Voronoi {
     int cur_id = 0;
     // Structure to store cells without finite halfedges
     std::list<int> not_created_cells;
+    // Set to store d_centroids out of the boundary
+    std::set<int> out_of_boundary_d_centroids;
 
     std::vector<std::vector<int>> node_neighbors_lookup = v_vertex_computation_(mesh, 
                                                                                 dcel_, 
@@ -59,7 +61,8 @@ class Voronoi {
                                                                                 centroid_lookup,
                                                                                 midpoints_lookup,
                                                                                 midpoints_lookup_raw,
-                                                                                cur_id);
+                                                                                cur_id,
+                                                                                out_of_boundary_d_centroids);
 
     // Define infinity v_vertex and add it to DCEL
     int infty_id = cur_id;
@@ -105,7 +108,7 @@ class Voronoi {
 
     std::cout << "\nFinished constructor" << std::endl;
 
-    std::map<int, std::vector<typename simplex_t::NodeType>> supplementary_points;
+    std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
     std::map<int, bool> on_boundary;
 
     boundary_cells_detection(mesh, supplementary_points, on_boundary, infty_id);
@@ -146,9 +149,10 @@ class Voronoi {
         this->dcel_.export_to_json(filename);
     }
 
-    void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id){
+    void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id,
+                      std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge){
 
-        std::map<int, std::vector<typename simplex_t::NodeType>> supplementary_points;
+        std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
 
         std::map<int, bool> on_boundary;
 
@@ -160,39 +164,56 @@ class Voronoi {
         );
 
         // Loop over cells
-        for (cell_t cur_cell : cells){
+        for (auto cur_cell_it = dcel_.cells_begin(); cur_cell_it != dcel_.cells_end(); cur_cell_it++){
 
             // Create a list of its points
-            std::list<node_t> pts;
+            std::vector<typename dcel_t::node_t*> pts;
 
             // Get nodes
-            pts.add(cur_cell.nodes())
-
-            // Remove infty points
-            pts.remove(infty_node)
+            for (auto cell_node = cur_cell_it->cell_nodes().cbegin(); cell_node!=cur_cell_it->cell_nodes().cend(); cell_node++){
+                if(cell_node->id() != infty_id){
+                    pts.push_back(&cell_node);
+                }
+            }
 
             // Get supplementary points
-            pts.add(supplementary_points[cur_cell.id()])
+            if (std::find(supplementary_points.begin(), supplementary_points.end(), cur_cell_it->id()) != supplementary_points.end()){
+                pts.insert(pts.end(), supplementary_points[cur_cell_it->id()].begin(), supplementary_points[cur_cell_it->id()].end());
+            }
 
-            // Verify if v_centroid is on boundary
-            if mesh.on_boundary(cur_cell.centroid())
+            typename simplex_t::NodeType v_centroid_coords;
+            v_centroid_coords(0) = mesh.node(cur_cell_it->id())(0);
+            v_centroid_coords(1) = mesh.node(cur_cell_it->id())(1);
 
-                // Add to supplementary points
-                pts.add(cur_cell.centroid())
+            // Put in counterclockwise order the points
+            std::sort(pts.begin(), pts.end(),
+                [&](dcel_t::node_t* pa, dcel_t::node_t* pb)
+            {
 
-            // Put in ounterclockwise order the points
-            pts = cclw(pts)
+                double ang_a = std::atan2(pa->coords(1) - v_centroid_coords(1),
+                                        pa->coords(0) - v_centroid_coords(0));
+                double ang_b = std::atan2(pb->coords(1) - v_centroid_coords(1),
+                                        pb->coords(0) - v_centroid_coords(0));
 
+                return ang_a > ang_b;
+            });
+            
             // Loop points one after the other
-            if (not halfedge_exists(cur_pt, next_pt))
+            for(auto pt = pts.begin(); pt != pts.end()-1; ++pt){
+                auto pt_next = std::next(pt);
+                // Check if the halfedge exists or not
+                auto key = std::pair{ pt->id(), pt_next->id() }; 
+                auto check_halfedge = std::find(vertexes2halfedge.begin(), vertexes2halfedge.end(), key);
+                // if(check_halfedge == vertexes2halfedge.end()){
+                //     // Add halfedge
+                //     add_halfedge(cur_pt, next_pt)
 
-                // Add halfedge
-                add_halfedge(cur_pt, next_pt)
+                //     // Remove halfedges (quali??)
 
-                // Remove halfedges (quali??)
+                // }
+            }
 
         }
-        
     }
 
     // What the following function does is understand which v_cells are on the boundary
@@ -203,14 +224,18 @@ class Voronoi {
     // - Following the order, if halfedge n1->n2 already exists, OK
     // - Else, create n1->n2, removing the appropriate halfedges in the DCEL
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
-                                std::map<int, std::vector<typename simplex_t::NodeType>>& supplementary_points,
+                                std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
                                 std::map<int, bool>& on_boundary,
                                 int infty_id){
         
+        int counter = infty_id;
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
             // Find closest v_centroid to d_edge_midpoint
             auto current_midpoint = d_boundary_edge->compute_midpoint();
+            typename dcel_t::node_t v_current_midpoint;
+            v_current_midpoint.set_coords(current_midpoint);
+            v_current_midpoint.set_id(++counter);
             auto closest_v_centroid = find_closest_v_centroid(mesh, current_midpoint);
 
             // Initialize list of v_cells to check
@@ -270,8 +295,16 @@ class Voronoi {
                             supplementary_points[cur_v_centroid.id()];
                             // std::cout << "Created place" << std::endl;
                         }
-                        supplementary_points[cur_v_centroid.id()].push_back(current_midpoint);
+                        supplementary_points[cur_v_centroid.id()].push_back(&v_current_midpoint);
                         // std::cout << "Pushed current midpoint" << std::endl;
+                        typename simplex_t::NodeType centroid_coords;
+                        centroid_coords(0) = mesh.node(cur_v_centroid.id())(0);
+                        centroid_coords(1) = mesh.node(cur_v_centroid.id())(1);
+                        typename dcel_t::node_t v_centroid_coords;
+                        v_centroid_coords.set_coords(centroid_coords);
+                        v_centroid_coords.set_id(counter++);
+                        // Add the Voronoi site to the supplementary points
+                        supplementary_points[cur_v_centroid.id()].push_back(&v_centroid_coords);
 
                         // Add to list neighbouring v_cell
                         // std::cout << "Twin cell ID " << (cur_halfedge.twin()->id()) << std::endl;
@@ -288,6 +321,9 @@ class Voronoi {
                         bool check_intersection= false;
                         typename simplex_t::NodeType intersection_point;
                         find_intersection(mesh, cur_halfedge, *d_boundary_edge, check_intersection, intersection_point);
+                        typename dcel_t::node_t v_intersection_point;
+                        v_intersection_point.set_coords(intersection_point);
+                        v_intersection_point.set_id(counter++);
 
                         // If you found it...
                         if(check_intersection){ 
@@ -298,7 +334,7 @@ class Voronoi {
                             if(supplementary_points.find(cur_v_centroid.id()) == supplementary_points.end()){
                                 supplementary_points[cur_v_centroid.id()];
                             }
-                            supplementary_points[cur_v_centroid.id()].push_back(intersection_point);
+                            supplementary_points[cur_v_centroid.id()].push_back(&v_intersection_point);
 
                             // Add to list neighbouring v_cell
                             to_check_v_cells.push_back(*(cur_halfedge.twin()->cell()));
@@ -388,7 +424,8 @@ class Voronoi {
         std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
         std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
         int& cur_midpoint_id,
-        bool print){
+        bool print,
+        std::set<int>& out_of_boundary_d_centroids){
                                         
         // Get neighbours
         Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = d_simplex.neighbors();
@@ -450,6 +487,7 @@ class Voronoi {
                     if(sp < 0){
                         mp(0) = 2*centroid_(0) - mp(0);
                         mp(1) = 2*centroid_(1) - mp(1);
+                        out_of_boundary_d_centroids.insert(d_simplex.id());
                     }
 
                     midpoints_lookup[cur_midpoint_id] = mp;
@@ -498,7 +536,8 @@ class Voronoi {
                             std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                             std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                             std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
-                            int& cur_id){
+                            int& cur_id,
+                            std::set<int>& out_of_boundary_d_centroids){
 
         // Number of faces in the mesh
         int n_d_simplexes = mesh.n_cells();
@@ -522,7 +561,7 @@ class Voronoi {
             typename simplex_t::NodeType d_centroid = d_simplex_it->circumcenter();
 
             // Compute neighbours
-            std::vector<int> neigh_vec = compute_neighbours_(mesh, *(d_simplex_it), midpoints_lookup, midpoints_lookup_raw, cur_midpoint_id, false);
+            std::vector<int> neigh_vec = compute_neighbours_(mesh, *(d_simplex_it), midpoints_lookup, midpoints_lookup_raw, cur_midpoint_id, false, out_of_boundary_d_centroids);
 
             // Check whether d_centroid is already associated to a v_vertex
             int v_vertex_id = v_vertex_from_d_centroid_(v_vertex_lookup, d_centroid);

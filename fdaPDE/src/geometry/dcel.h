@@ -81,6 +81,8 @@ template <int LocalDim, int EmbedDim> class DCEL {
          // observers and modifiers
          const coords_t& coords() const { return coords_; }
          halfedge_t* halfedge() const { return halfedge_; }
+         void set_coords(coords_t coords) {coords_(0) = coords(0); coords_(1) = coords(1); }
+         void set_id(int id) {id_ = id; }
          void set_halfedge(halfedge_t* halfedge) { halfedge_ = halfedge; }
          void add_halfedge( int neigh_id, halfedge_t* connecting_halfedge ) { 
             halfedges_lookup_[neigh_id] = connecting_halfedge; 
