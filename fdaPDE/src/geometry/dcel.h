@@ -938,6 +938,28 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
     }
 
+    void update_halfedges_with_cells(){
+
+        // Loop over cells
+        for (cell_iterator cur_cell = cells_begin(); cur_cell != cells_end(); cur_cell++){
+
+            // Loop over cell halfedgesù
+            halfedge_t* start = cur_cell->halfedge();
+            halfedge_t* cur_halfedge = start->next();
+
+            // Update cell of start
+            start->set_cell(&(*cur_cell));
+
+            // Loop over halfedges 
+            while(start != cur_halfedge){
+                // Update halfedge' s cell
+                cur_halfedge->set_cell(&(*cur_cell));
+                cur_halfedge = cur_halfedge->next();
+            }
+            
+        }
+    }
+
 private:
     // internal storage (use list to avoid reallocations)
     std::list<node_t> nodes_;

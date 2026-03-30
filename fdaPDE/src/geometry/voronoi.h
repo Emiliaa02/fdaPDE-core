@@ -99,6 +99,9 @@ class Voronoi {
     // Connect the infinity halfedges
     connect_infty_halfedges_(infty_id);
 
+    // Update halfedges-cells structure in DCEL
+    this->dcel_.update_halfedges_with_cells();
+
 
     std::cout << "\nFinished constructor" << std::endl;
 
@@ -143,7 +146,52 @@ class Voronoi {
         this->dcel_.export_to_json(filename);
     }
 
-    void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh){
+    void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id){
+
+        std::map<int, std::vector<typename simplex_t::NodeType>> supplementary_points;
+
+        std::map<int, bool> on_boundary;
+
+        boundary_cells_detection(
+            mesh,
+            supplementary_points,
+            on_boundary,
+            infty_id
+        );
+
+        // Loop over cells
+        for (cell_t cur_cell : cells){
+
+            // Create a list of its points
+            std::list<node_t> pts;
+
+            // Get nodes
+            pts.add(cur_cell.nodes())
+
+            // Remove infty points
+            pts.remove(infty_node)
+
+            // Get supplementary points
+            pts.add(supplementary_points[cur_cell.id()])
+
+            // Verify if v_centroid is on boundary
+            if mesh.on_boundary(cur_cell.centroid())
+
+                // Add to supplementary points
+                pts.add(cur_cell.centroid())
+
+            // Put in ounterclockwise order the points
+            pts = cclw(pts)
+
+            // Loop points one after the other
+            if (not halfedge_exists(cur_pt, next_pt))
+
+                // Add halfedge
+                add_halfedge(cur_pt, next_pt)
+
+                // Remove halfedges (quali??)
+
+        }
         
     }
 
@@ -163,24 +211,31 @@ class Voronoi {
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
             // Find closest v_centroid to d_edge_midpoint
             auto current_midpoint = d_boundary_edge->compute_midpoint();
-            std::cout<<current_midpoint<<std::endl;
             auto closest_v_centroid = find_closest_v_centroid(mesh, current_midpoint);
 
             // Initialize list of v_cells to check
             std::list<typename dcel_t::cell_t> to_check_v_cells{closest_v_centroid};
+
+            // Initialize map of checked halfedges
+            std::map<int, bool> already_checked_halfedges;
 
             // Compute the v_cell2halfedges structure
             std::map<int, std::vector<int>> v_cell_halfedges = compute_v_cell2halfedges_(infty_id);
 
             // While list to check is not empty
             while (to_check_v_cells.size() > 0){
+                // std::cout << "Size of to_check_v_cells: " << to_check_v_cells.size() << std::endl;
+                // std::cout << "Entered while" << std::endl;
                 typename dcel_t::cell_t cur_v_centroid = to_check_v_cells.front(); 
+                // std::cout << "Front of the list: " << cur_v_centroid.id() << std::endl;
                 to_check_v_cells.pop_front();
+                // std::cout << "Popped front" << std::endl;
 
                 std::vector<int> cur_v_cell_halfedges = v_cell_halfedges.at(cur_v_centroid.id());
                 bool found_halfedge = false;
                 // Loop over cur_v_cell halfedges
-                for(int cur_halfedge_id: cur_v_cell_halfedges){                    
+                for(int cur_halfedge_id: cur_v_cell_halfedges){      
+                    // std::cout << "Inside halfedges for" << std::endl;              
                     typename dcel_t::halfedge_t cur_halfedge;
                 
                     for(auto it = this->dcel_.halfedges_begin(); it != this->dcel_.halfedges_end(); ++it){
@@ -202,24 +257,32 @@ class Voronoi {
                         throw std::runtime_error("Twin cell is null");
                     }
                     // If we already know halfedge intersects boundary edge (necessarily on the midpoint)...
-                    if(intersection_d_edges_.find(cur_halfedge_id) != intersection_d_edges_.end()
+                    auto check_it = already_checked_halfedges.find(cur_halfedge_id);
+                    if((check_it == already_checked_halfedges.end() || !check_it->second) && intersection_d_edges_.find(cur_halfedge_id) != intersection_d_edges_.end()
                        && intersection_d_edges_.at(cur_halfedge_id) == d_boundary_edge->id()){
-
+                        
+                        // std::cout << "Halfedge already intersects edge" << std::endl;
                         // cur_v_cell is boundary cell
                         on_boundary[cur_v_centroid.id()] = true;
-
+                        // std::cout << "Put on boundary" << std::endl;
                         // Add to cur_v_cell the midpoint
                         if(supplementary_points.find(cur_v_centroid.id()) == supplementary_points.end()){
                             supplementary_points[cur_v_centroid.id()];
+                            // std::cout << "Created place" << std::endl;
                         }
                         supplementary_points[cur_v_centroid.id()].push_back(current_midpoint);
+                        // std::cout << "Pushed current midpoint" << std::endl;
 
                         // Add to list neighbouring v_cell
+                        // std::cout << "Twin cell ID " << (cur_halfedge.twin()->id()) << std::endl;
                         to_check_v_cells.push_back(*(cur_halfedge.twin()->cell()));
+                        // std::cout << "Added to list neighbouring v_cell" << std::endl;
+
+                        already_checked_halfedges[cur_halfedge_id] = true;
                         
                     }
                     // ... otherwise
-                    else{
+                    else if (check_it == already_checked_halfedges.end() || !check_it->second){
 
                         // Check whether halfedge and boundary edge intersect in a point
                         bool check_intersection= false;
@@ -239,6 +302,8 @@ class Voronoi {
 
                             // Add to list neighbouring v_cell
                             to_check_v_cells.push_back(*(cur_halfedge.twin()->cell()));
+
+                            already_checked_halfedges[cur_halfedge_id] = true;
                         }
                     }
                 
