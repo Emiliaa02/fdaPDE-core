@@ -200,17 +200,34 @@ class Voronoi {
             
             // Loop points one after the other
             for(auto pt = pts.begin(); pt != pts.end()-1; ++pt){
+                auto pt_prev = nullptr;
+                typename dcel_t::halfedge_t* prev_halfedge = nullptr;
+                // Salviamo il punto precedente se non siamo all'inizio
+                if(pt != pts.begin()) {
+                    pt_prev = std::prev(pt);
+                    if(std::find(vertexes2halfedge.begin(), vertexes2halfedge.end(), std::pair{pt_prev->id(), pt->id()})!= vertexes2halfedge.end()){
+                        prev_halfedge = vertexes2halfedge[std::pair{pt_prev->id(), pt->id()}];
+                    }
+                }
                 auto pt_next = std::next(pt);
                 // Check if the halfedge exists or not
                 auto key = std::pair{ pt->id(), pt_next->id() }; 
                 auto check_halfedge = std::find(vertexes2halfedge.begin(), vertexes2halfedge.end(), key);
-                // if(check_halfedge == vertexes2halfedge.end()){
-                //     // Add halfedge
-                //     add_halfedge(cur_pt, next_pt)
+                if(check_halfedge == vertexes2halfedge.end()){
+                    // Add halfedge
+                    typename dcel_t::halfedge_t new_halfedge = dcel_.emplace_halfedge(*pt);
+                    pt-> set_halfedge(new_halfedge);
+                    pt-> add_halfedge(pt_next->id(), new_halfedge);
+                    if(std::find(vertexes2halfedge.begin(), vertexes2halfedge.end(), std::pair{pt_next->id(), pt->id()}) != vertexes2halfedge.end()){
+                        typename dcel_t::halfedge_t* twin_halfedge = vertexes2halfedge.at(std::pair{pt_next->id(), pt->id()})
+                        new_halfedge -> set_twin(twin_halfedge);
+                        twin_halfedge -> set_twin(cell_halfedge);
+                    }
+                    vertexes2halfedge.insert({std::make_pair(pt->id(), pt_next->id()), new_halfedge});
 
-                //     // Remove halfedges (quali??)
+                    // Remove halfedges (quali??)
 
-                // }
+                }
             }
 
         }
