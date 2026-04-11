@@ -151,7 +151,7 @@ class Voronoi {
     }
 
     void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id,
-                      std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge){
+                      std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge){
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
         std::map<int, bool> on_boundary;
@@ -161,22 +161,34 @@ class Voronoi {
                                 on_boundary,
                                 infty_id
                                 );
+        std::cout << "Sizes in supplementary points:" << std::endl;
+        for (auto item : supplementary_points){
+            std::cout << "For ID " << item.first << " size " << item.second.size() << std::endl;
+        }
 
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = dcel_.cells_begin(); cur_cell_it != dcel_.cells_end(); cur_cell_it++){
+            // SE FAI STAMPARE QUESTO DA SEG FAULT!!!
+            // std::cout << "Cell ID " << std::endl;
+            // std::cout << "FIRST Begin cycle for ID: " << cur_cell_it -> id() << std::endl;
+            // std::cout << "After print" << std::endl;
             typename dcel_t::halfedge_t* start = nullptr;
             typename dcel_t::halfedge_t* cur_halfedge = nullptr;
+            typename dcel_t::halfedge_t* prev_halfedge = nullptr;
 
-            // Create a list of its points
+            // // Create a list of its points
             std::vector<typename dcel_t::node_t*> pts;
 
-            // Get nodes
+            // // Get nodes
             std::vector<typename dcel_t::node_t*> nodes = cur_cell_it -> cell_nodes();
             for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){
                 if((*cell_node)->id() != infty_id){
                     pts.push_back(*cell_node);
                 }
             }
+            // if(pts.size() < 2){
+            //     std::cout << "FOUND LESS THAN TWO ORIGINAL NODES FOR CELL " << cur_cell_it -> id() << std::endl;
+            // }
 
             // Get supplementary points
             auto check_supp_pt = supplementary_points.find(cur_cell_it->id());
@@ -188,7 +200,7 @@ class Voronoi {
             v_centroid_coords(0) = mesh.node(cur_cell_it->id())(0);
             v_centroid_coords(1) = mesh.node(cur_cell_it->id())(1);
 
-            // Put in counterclockwise order the points
+            // // Put in counterclockwise order the points
             std::sort(pts.begin(), pts.end(),
                 [&](dcel_t::node_t* pa, dcel_t::node_t* pb)
             {
@@ -198,36 +210,41 @@ class Voronoi {
                 double ang_b = std::atan2(pb->coords()(1) - v_centroid_coords(1),
                                         pb->coords()(0) - v_centroid_coords(0));
 
-                return ang_a > ang_b;
+                return ang_a < ang_b;
             });
             
             // Loop points one after the other
-            for(auto pt = pts.begin(); pt != pts.end()-1; ++pt){
+            if(pts.size() < 2){
+                std::cout << "LESS THAN 2 POINTS" << std::endl;
+                continue;
+            }
+            for(auto pt = pts.begin(); pt != pts.end(); ++pt){
+
+                // Next point
                 auto pt_next = std::next(pt);
-                auto pt_prev = pts.end();
-                typename dcel_t::halfedge_t* prev_halfedge = nullptr;
-                // If we are not at the beginning we can save the previous point and the previous halfedge
-                if(pt != pts.begin()) {
-                    pt_prev = std::prev(pt);
-                    auto it = vertexes2halfedge.find({(*pt_prev)->id(), (*pt)->id()});
-                    if(it != vertexes2halfedge.end()){
-                        prev_halfedge = it->second;
-                    }
+                if (pt_next == pts.end()) {
+                    pt_next = pts.begin();
                 }
+
+                // Look for cur->next halfedge
+                auto search_it = vertexes2halfedge.find({(*pt)->id(), (*pt_next)->id()});
+
+                // If cur -> next halfedge already exists, retrieve it...
+                if (search_it != vertexes2halfedge.end()){
+                    cur_halfedge = search_it -> second;
+                }
+                // ... otherwise create it
                 else{
-                    auto it = vertexes2halfedge.find({(*pt)->id(), (*pt_next)->id()});
-                    if(it != vertexes2halfedge.end()){
-                        start = it->second;
-                    }
-                }
-                // Check if the halfedge exists or not
-                auto key = std::pair{ (*pt)->id(), (*pt_next)->id() }; 
-                auto check_halfedge = vertexes2halfedge.find(key);
-                if(check_halfedge == vertexes2halfedge.end()){
-                    // Add the new halfedge to the DCEL structure
+                    // Create new halfedge
                     typename dcel_t::halfedge_t* new_halfedge = dcel_.emplace_halfedge(*pt);
+
+                    // Set it as halfedge for pt
                     (*pt) -> set_halfedge(new_halfedge);
+
+                    // Add halfedge to the node_t structure
                     (*pt) -> add_halfedge((*pt_next)->id(), new_halfedge);
+
+                    // If its twin already exists, connect them
                     auto twin_it = vertexes2halfedge.find({(*pt_next)->id(), (*pt)->id()});
                     if(twin_it != vertexes2halfedge.end()){
                         typename dcel_t::halfedge_t* twin_halfedge = twin_it->second;
@@ -235,24 +252,108 @@ class Voronoi {
                         twin_halfedge -> set_twin(new_halfedge);
                     }
                     vertexes2halfedge.insert({std::make_pair((*pt)->id(), (*pt_next)->id()), new_halfedge});
-                    // NOTA BENE: Guardare bene questa cosa
-                    if(prev_halfedge){
-                        prev_halfedge -> set_next(new_halfedge);
-                        new_halfedge -> set_prev(prev_halfedge);
-                    }
+
+                    // Now it is the current halfedge
                     cur_halfedge = new_halfedge;
-                    // Remove halfedges (quali??)
                 }
-                else{
-                    cur_halfedge = check_halfedge->second;
+
+                // If this is the first loop, initialize start
+                start = cur_halfedge;
+
+                // If previous halfedge is not null, connect them
+                if (prev_halfedge){
+                    prev_halfedge -> set_next(cur_halfedge);
+                    cur_halfedge -> set_prev(prev_halfedge);
                 }
-            }
-            if(start){
-                cur_halfedge -> set_next(start);
-                start -> set_prev(cur_halfedge);
-            }
+
+                // Previous halfedge becomes current halfedge
+                prev_halfedge = cur_halfedge;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //     auto pt_next = std::next(pt);
+            //     if (pt_next == pts.end()) {
+            //         pt_next = pts.begin();
+            //     }
+            //     auto pt_prev = pts.end();
+            //     typename dcel_t::halfedge_t* prev_halfedge = nullptr;
+            //     // If we are not at the beginning we can save the previous point and the previous halfedge
+            //     if(pt != pts.begin()) {
+            //         pt_prev = std::prev(pt);
+            //         auto it = vertexes2halfedge.find({(*pt_prev)->id(), (*pt)->id()});
+            //         if(it != vertexes2halfedge.end()){
+            //             prev_halfedge = it->second;
+            //         }
+            //     }
+
+            //     // Check if the halfedge exists or not
+            //     auto key = std::pair{ (*pt)->id(), (*pt_next)->id() }; 
+            //     auto check_halfedge = vertexes2halfedge.find(key);
+            //     if(check_halfedge == vertexes2halfedge.end()){
+            //         // Add the new halfedge to the DCEL structure
+            //         typename dcel_t::halfedge_t* new_halfedge = dcel_.emplace_halfedge(*pt);
+            //         (*pt) -> set_halfedge(new_halfedge);
+            //         (*pt) -> add_halfedge((*pt_next)->id(), new_halfedge);
+            //         auto twin_it = vertexes2halfedge.find({(*pt_next)->id(), (*pt)->id()});
+            //         if(twin_it != vertexes2halfedge.end()){
+            //             typename dcel_t::halfedge_t* twin_halfedge = twin_it->second;
+            //             new_halfedge -> set_twin(twin_halfedge);
+            //             twin_halfedge -> set_twin(new_halfedge);
+            //         }
+            //         vertexes2halfedge.insert({std::make_pair((*pt)->id(), (*pt_next)->id()), new_halfedge});
+
+            //         cur_halfedge = new_halfedge;
+            //         // Remove halfedges (quali??)
+            //     }
+            //     else{
+            //         cur_halfedge = check_halfedge->second;
+            //     }
+            //     if(prev_halfedge){
+            //         prev_halfedge -> set_next(cur_halfedge);
+            //         cur_halfedge -> set_prev(prev_halfedge);
+            //     }
+            //     if(pt == pts.begin()){
+            //         auto it = vertexes2halfedge.find({(*pt)->id(), (*pt_next)->id()});
+            //         if(it != vertexes2halfedge.end()){
+            //             start = it->second;
+            //         }
+            //     }
+            // }
+            // if(start){
+            //     cur_halfedge -> set_next(start);
+            //     start -> set_prev(cur_halfedge);
+            //     // cur_cell_it -> set_halfedge(start);
+            // }
+            // std::cout << "Finished cycle for cell " << cur_cell_it->id() << std::endl;
+
+
+        }
+        if (start){
+            cur_halfedge -> set_next(start);
+            start -> set_prev(cur_halfedge);
         }
     }
+}
+
+        // std::cout << "OK" << std::endl;
+        // for(auto cur_cell_it = dcel_.cells_begin(); cur_cell_it != dcel_.cells_end(); cur_cell_it++){
+        //     std::cout << "Begin cycle for ID: " << cur_cell_it -> id() << std::endl;
+        // }
+        // std::cout << "OK" << std::endl;
+    // }
 
     // What the following function does is understand which v_cells are on the boundary
     // and compile supplementary_points[v_cell_id]: for each v_cell, it assigns, if it is on boundary,

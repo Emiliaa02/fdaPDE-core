@@ -109,8 +109,9 @@ int unbdd=0;
 // std::cout << "Area " << sum <<std::endl;
 // std::cout << "Unbounded " << unbdd << std::endl;
 
-
-// voronoi_obj.export_to_json("plots/data/unit_square_16.json");
+std::cout << "Exporting..." << std::endl;
+voronoi_obj.export_to_json("plots/data/unit_square_16.json");
+std::cout << "Finished exporting" << std::endl;
 
 return 0;
 }
