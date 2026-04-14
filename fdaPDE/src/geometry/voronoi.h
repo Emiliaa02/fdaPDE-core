@@ -214,6 +214,10 @@ class Voronoi {
                 if (pt_next == pts.end()) {
                     pt_next = pts.begin();
                 }
+                // if (cur_cell_it->id()==1){
+                //     std::cout << "Start point ID: " << (*pt)->id() << std::endl;
+                //     std::cout << "Next point ID: " << (*pt_next)->id() << std::endl;
+                // }
 
                 // Look for cur->next halfedge
                 auto search_it = vertexes2halfedge.find({(*pt)->id(), (*pt_next)->id()});
@@ -246,7 +250,9 @@ class Voronoi {
                 }
 
                 // If this is the first loop, initialize start
-                start = cur_halfedge;
+                if(pt == pts.begin()){
+                    start = cur_halfedge;
+                }
 
                 // If previous halfedge is not null, connect them
                 if (prev_halfedge){
@@ -281,12 +287,12 @@ class Voronoi {
         int counter = infty_id;
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
-            typename dcel_t::node_t* v_current_midpoint = new typename dcel_t::node_t();
-            typename dcel_t::node_t* v_centroid_coords = new typename dcel_t::node_t();
+            // typename dcel_t::node_t* v_current_midpoint = new typename dcel_t::node_t();
+            // typename dcel_t::node_t* v_centroid_coords = new typename dcel_t::node_t();
             // Find closest v_centroid to d_edge_midpoint
             auto current_midpoint = d_boundary_edge->compute_midpoint();
-            v_current_midpoint->set_coords(current_midpoint);
-            v_current_midpoint->set_id(++counter);
+            // v_current_midpoint->set_coords(current_midpoint);
+            // v_current_midpoint->set_id(++counter);
             auto closest_v_centroid = find_closest_v_centroid(mesh, current_midpoint);
 
             // Initialize list of v_cells to check
@@ -338,6 +344,7 @@ class Voronoi {
                             typename simplex_t::NodeType centroid_coords;
                             centroid_coords(0) = mesh.node(cur_v_centroid.id())(0);
                             centroid_coords(1) = mesh.node(cur_v_centroid.id())(1);
+                            typename dcel_t::node_t* v_centroid_coords = new typename dcel_t::node_t();
                             v_centroid_coords->set_coords(centroid_coords);
                             v_centroid_coords->set_id(counter++);
                             // Add the Voronoi site to the supplementary points
@@ -348,6 +355,9 @@ class Voronoi {
                         if(supplementary_points.find(cur_v_centroid.id()) == supplementary_points.end()){
                             supplementary_points[cur_v_centroid.id()];
                         }
+                        typename dcel_t::node_t* v_current_midpoint = new typename dcel_t::node_t();
+                        v_current_midpoint->set_coords(current_midpoint);
+                        v_current_midpoint->set_id(++counter);
                         supplementary_points[cur_v_centroid.id()].push_back(v_current_midpoint);
 
                         // Add to list neighbouring v_cell
@@ -389,6 +399,7 @@ class Voronoi {
                 
             }
         }
+
     }
 
     typename dcel_t::cell_t find_closest_v_centroid(const Triangulation<local_dim, embed_dim>& mesh, 
