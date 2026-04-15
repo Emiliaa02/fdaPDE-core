@@ -121,11 +121,11 @@ class Voronoi {
     using cell_iterator = std::list<cell_t>::iterator;
     using const_cell_iterator = std::list<cell_t>::const_iterator;
 
-    cell_iterator cells_begin() { return cells_.begin(); }
-    cell_iterator cells_end() { return cells_.end(); }
+    cell_iterator cells_begin() { return this->dcel_.cells_begin(); }
+    cell_iterator cells_end() { return this->dcel_.cells_end(); }
 
-    const_cell_iterator cells_cbegin() { return cells_.cbegin(); }
-    const_cell_iterator cells_cend() { return cells_.cend(); }
+    const_cell_iterator cells_cbegin() { return this->dcel_.cells_cbegin(); }
+    const_cell_iterator cells_cend() { return this->dcel_.cells_cend(); }
 
     // observers
     // matrix of coordinates (n_nodes x EmbedDim)
@@ -163,7 +163,7 @@ class Voronoi {
                                 );
 
         // Loop over cells of the DCEL structure
-        for (auto cur_cell_it = dcel_.cells_cbegin(); cur_cell_it != dcel_.cells_cend(); cur_cell_it++){
+        for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
             if(on_boundary.find((*cur_cell_it).id()) == on_boundary.end()){ continue; };
             typename dcel_t::halfedge_t* start = nullptr;
             typename dcel_t::halfedge_t* cur_halfedge = nullptr;
@@ -183,6 +183,10 @@ class Voronoi {
             // Get supplementary points
             auto check_supp_pt = supplementary_points.find(cur_cell_it->id());
             if (check_supp_pt != supplementary_points.end()){
+                // Insert supplementary points in DCEL structure
+                for(auto supp_pt : check_supp_pt->second){
+                    dcel_.insert_node(*supp_pt);
+                }
                 pts.insert(pts.end(), check_supp_pt->second.begin(), check_supp_pt->second.end());
             }
             typename simplex_t::NodeType v_centroid_coords;
@@ -224,11 +228,13 @@ class Voronoi {
                 // If cur -> next halfedge already exists, retrieve it...
                 if (search_it != vertexes2halfedge.end()){
                     cur_halfedge = search_it -> second;
+                    cur_cell_it -> set_halfedge(cur_halfedge);
                 }
                 // ... otherwise create it
                 else{
                     // Create new halfedge
-                    typename dcel_t::halfedge_t* new_halfedge = dcel_.emplace_halfedge(*pt);
+                    typename dcel_t::halfedge_t* new_halfedge = new typename dcel_t::halfedge_t();
+                    new_halfedge = dcel_.emplace_halfedge(*pt);
 
                     // Set it as halfedge for pt
                     (*pt) -> set_halfedge(new_halfedge);
@@ -247,6 +253,8 @@ class Voronoi {
 
                     // Now it is the current halfedge
                     cur_halfedge = new_halfedge;
+
+                    cur_cell_it -> set_halfedge(cur_halfedge);
                 }
 
                 // If this is the first loop, initialize start
@@ -266,6 +274,16 @@ class Voronoi {
         if (start){
             cur_halfedge -> set_next(start);
             start -> set_prev(cur_halfedge);
+        }
+
+        // Declare cell as clipped
+        cur_cell_it->clipped();
+        if (cur_cell_it->id()==0){
+            std::cout << "Nodes: " << std::endl;
+            auto ns = cur_cell_it->cell_edges();
+            for(auto n : ns){
+                std::cout << "ID: " << n->id() << std::endl;
+            }
         }
     }
 }

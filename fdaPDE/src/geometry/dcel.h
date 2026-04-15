@@ -271,6 +271,8 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         void set_unbounded() {unbounded_ = true; }
 
+        void clipped() {unbounded_ = false; }
+
         bool is_unbounded() const { return unbounded_; }
 
         // Cell measure
