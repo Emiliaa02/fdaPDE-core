@@ -297,7 +297,7 @@ class Voronoi {
             }
         }
     }
-        
+    
     this->dcel_.remove_nodes(node_ids_to_remove);
 }
 
@@ -316,6 +316,7 @@ class Voronoi {
 
         std::set<int> entered_first_time;
         int counter = infty_id;
+        std::cout << "Infinity ID: " << infty_id << std::endl;
         node_ids_to_remove.push_back(infty_id);
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){

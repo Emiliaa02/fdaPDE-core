@@ -105,7 +105,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
         std::vector<int> neighbours() const{
             std::vector<int> neighbours;
-            neighbours.reserve(halfedges_lookup_.shape());
+            neighbours.reserve(halfedges_lookup_.size());
             for (const auto& kv: halfedges_lookup_){
                 int neigh = kv.first;
                 neighbours.push_back(neigh);
@@ -606,7 +606,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
     }
 
     void remove_nodes(std::vector<int> nodes_ids){
+
         for (int node_id : nodes_ids){
+            std::cout << "Node with ID: " << node_id << std::endl;
             // Find node in nodes_
             auto node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [node_id](const node_t& p) {
@@ -617,36 +619,85 @@ template <int LocalDim, int EmbedDim> class DCEL {
             node_it->set_halfedge(nullptr);
 
             // Neighbouring nodes
-            std::vector<int> neighbours;
+            std::vector<int> neighbours = node_it->neighbours();
 
-            // Loop over its neighbours
-            for (int neigh : neighbours){
+            for (auto h : halfedges_){
 
-                // Retrieve halfedge
-                auto h = node_it->neighID2halfedge(neigh);
+                if (h.node()->id() != node_id){
+                    continue;
+                }
 
-                // Null halfedge node, twin, prev and next
-                h->set_node(nullptr);
-                h->set_twin(nullptr);
-                h->set_prev(nullptr);
-                h->set_next(nullptr);
+                int neigh = h.twin()->node()->id();
 
                 // Remove halfedge from halfedges list
-                int h_id = h->id();
+                int h_id = h.id();
+                int twin_id = h.twin()->id();
+
+                h.set_node(nullptr);
+                h.set_twin(nullptr);
+                h.set_prev(nullptr);
+                h.set_next(nullptr);
+
+                h.twin()->set_node(nullptr);
+                h.twin()->set_twin(nullptr);
+                h.twin()->set_prev(nullptr);
+                h.twin()->set_next(nullptr);
+
+                halfedges_.remove_if([twin_id](const halfedge_t& he) {
+                    return he.id() == twin_id;
+                });
                 halfedges_.remove_if([h_id](const halfedge_t& he) {
                     return he.id() == h_id;
                 });
 
+                auto h_in_lookup = node_it->neighID2halfedge(neigh);
+
+                h_in_lookup->set_node(nullptr);
+                h_in_lookup->set_twin(nullptr);
+                h_in_lookup->set_prev(nullptr);
+                h_in_lookup->set_next(nullptr);
+
                 // Set halfedge to nullptr
                 node_it->remove_halfedge(neigh);
+
             }
+
+            // // Loop over its neighbours
+            // for (int neigh : neighbours){
+            //     std::cout << "Neighbour ID: " << neigh << std::endl;
+
+            //     // Retrieve halfedge
+            //     auto h = node_it->neighID2halfedge(neigh);
+
+            //     // Remove halfedge from halfedges list
+            //     int h_id = h->id();
+            //     int twin_id = h->twin()->id();
+
+            //     halfedges_.remove_if([twin_id](const halfedge_t& he) {
+            //         return he.id() == twin_id;
+            //     });
+            //     halfedges_.remove_if([h_id](const halfedge_t& he) {
+            //         return he.id() == h_id;
+            //     });
+
+            //     // Null halfedge node, twin, prev and next
+            //     h->set_node(nullptr);
+            //     h->set_twin(nullptr);
+            //     h->set_prev(nullptr);
+            //     h->set_next(nullptr);
+
+            //     // Set halfedge to nullptr
+            //     node_it->remove_halfedge(neigh);
+            // }
         }
 
         // Loop over points and remove them
         for (int node_id : nodes_ids){
+
             nodes_.remove_if([node_id](const node_t& n) {
                     return n.id() == node_id;
                 });
+
         }
     }
 

@@ -92,25 +92,25 @@ std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and "
 int i = 0;
 float sum=0;
 int unbdd=0;
-for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-	auto measure = it->measure();
+// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+// 	auto measure = it->measure();
 
-    std::cout << "Cell with ID " << it->id() << " unbounded? " << it->is_unbounded() << std::endl;
+//     std::cout << "Cell with ID " << it->id() << " unbounded? " << it->is_unbounded() << std::endl;
 
-  if (measure != std::numeric_limits<double>::infinity()) {
-	sum+=measure;  
-  i += 1;
-  std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
-}
-  if(it->is_unbounded()){
+//   if (measure != std::numeric_limits<double>::infinity()) {
+// 	sum+=measure;  
+//   i += 1;
+//   std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
+// }
+//   if(it->is_unbounded()){
 
-    unbdd+=1;
-  }
-}
+//     unbdd+=1;
+//   }
+// }
 
-std::cout << "Printed area of " << i << " cells" << std::endl;
-std::cout << "Area " << sum <<std::endl;
-std::cout << "Unbounded " << unbdd << std::endl;
+// std::cout << "Printed area of " << i << " cells" << std::endl;
+// std::cout << "Area " << sum <<std::endl;
+// std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
 voronoi_obj.export_to_json("plots/data/unit_square_16.json");
