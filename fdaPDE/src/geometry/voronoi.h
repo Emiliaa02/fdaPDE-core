@@ -155,12 +155,13 @@ class Voronoi {
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
         std::set<int> on_boundary;
+        std::set<int> node_ids_to_remove;
 
         boundary_cells_detection(mesh,
                                 supplementary_points,
                                 on_boundary,
-                                infty_id
-                                );
+                                infty_id,
+                                node_ids_to_remove);
 
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
@@ -189,19 +190,29 @@ class Voronoi {
                 }
                 pts.insert(pts.end(), check_supp_pt->second.begin(), check_supp_pt->second.end());
             }
-            typename simplex_t::NodeType v_centroid_coords;
-            v_centroid_coords(0) = mesh.node(cur_cell_it->id())(0);
-            v_centroid_coords(1) = mesh.node(cur_cell_it->id())(1);
+            // typename simplex_t::NodeType v_centroid_coords;
+            // v_centroid_coords(0) = mesh.node(cur_cell_it->id())(0);
+            // v_centroid_coords(1) = mesh.node(cur_cell_it->id())(1);
+            typename simplex_t::NodeType center_of_mass;
+            center_of_mass(0) = 0;
+            center_of_mass(1) = 0;
+            for(auto pt : pts){
+                auto pt_coords = pt->coords();
+                center_of_mass(0) += pt_coords(0);
+                center_of_mass(1) += pt_coords(1);
+            }
+            center_of_mass(0) = center_of_mass(0) / pts.size();
+            center_of_mass(1) = center_of_mass(1) / pts.size();
 
             // // Put in counterclockwise order the points
             std::sort(pts.begin(), pts.end(),
                 [&](dcel_t::node_t* pa, dcel_t::node_t* pb)
             {
 
-                double ang_a = std::atan2(pa->coords()(1) - v_centroid_coords(1),
-                                        pa->coords()(0) - v_centroid_coords(0));
-                double ang_b = std::atan2(pb->coords()(1) - v_centroid_coords(1),
-                                        pb->coords()(0) - v_centroid_coords(0));
+                double ang_a = std::atan2(pa->coords()(1) - center_of_mass(1),
+                                        pa->coords()(0) - center_of_mass(0));
+                double ang_b = std::atan2(pb->coords()(1) - center_of_mass(1),
+                                        pb->coords()(0) - center_of_mass(0));
 
                 return ang_a < ang_b;
             });
@@ -286,6 +297,8 @@ class Voronoi {
             }
         }
     }
+        
+    this->dcel_.remove_node_and_halfedges(node_ids_to_remove);
 }
 
 
@@ -299,10 +312,11 @@ class Voronoi {
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
                                 std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
                                 std::set<int>& on_boundary,
-                                int infty_id){
+                                int infty_id, std::set<int>& node_ids_to_remove){
 
         std::set<int> entered_first_time;
         int counter = infty_id;
+        node_ids_to_remove.insert(infty_id);
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
             // typename dcel_t::node_t* v_current_midpoint = new typename dcel_t::node_t();

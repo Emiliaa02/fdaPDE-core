@@ -76,7 +76,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 
 Voronoi<2, 2> voronoi_obj(mesh);
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
@@ -113,7 +113,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/c_shaped.json");
+voronoi_obj.export_to_json("plots/data/unit_square_16.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;

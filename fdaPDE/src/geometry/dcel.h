@@ -145,6 +145,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
         void set_id(int id) {id_=id;}
         void set_it(std::list<halfedge_t>::iterator it) { it_ = it; }
         void set_segment(bool sub) { segment_ = sub; }
+        bool operator==(const halfedge_t& other) const {
+           return id_ == other.id_;  
+        }
 
         // iterator (follows the chain of directed edges until no next valid edge or this edge is found)
         struct circulator {
@@ -589,6 +592,46 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
         return h1;
     }
+
+    void remove_node_and_halfedges(std::set<int> nodes_to_remove){
+        
+        std::set<halfedge_t*> hedges_to_remove;
+        for (auto& h : halfedges_) {
+            bool remove = false;
+
+            if (h.node() && nodes_to_remove.count(h.node()->id()))
+                remove = true;
+
+            if (h.twin() && h.twin()->node() &&
+                nodes_to_remove.count(h.twin()->node()->id()))
+                remove = true;
+
+            if (remove)
+                hedges_to_remove.insert(&h);
+        }
+
+        for (halfedge_t* h : hedges_to_remove) {
+            if (h->twin() && !hedges_to_remove.count(h->twin()))
+                h->twin()->set_twin(nullptr);
+
+            if (h->node()) {
+                auto cur_halfedge_lookup = h->node()->halfedges_lookup_;   
+                for(auto cur_neigh_id : cur_halfedge_lookup.keys()){
+                    cur_halfedge_lookup.at(cur_neigh_id) = nullptr;
+                }
+            }
+
+        }
+
+        for (halfedge_t* h : hedges_to_remove) {
+            halfedges_.erase(h->it());
+        }
+
+        nodes_.remove_if([&](const node_t& n) {
+            return nodes_to_remove.count(n.id());
+        });
+    }
+    
 
     // function to add a polygon to a DCEL; if buidling_dcel is true, it means the DCEL is being built from scratch (i.e. in from_triangulation)
     halfedge_t* add_polygon(halfedge_t* v, const std::vector<node_t*>& nodes, bool building_dcel=false){
