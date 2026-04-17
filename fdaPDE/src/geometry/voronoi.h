@@ -155,7 +155,7 @@ class Voronoi {
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
         std::set<int> on_boundary;
-        std::set<int> node_ids_to_remove;
+        std::vector<int> node_ids_to_remove;
 
         boundary_cells_detection(mesh,
                                 supplementary_points,
@@ -298,7 +298,7 @@ class Voronoi {
         }
     }
         
-    this->dcel_.remove_node_and_halfedges(node_ids_to_remove);
+    this->dcel_.remove_nodes(node_ids_to_remove);
 }
 
 
@@ -312,11 +312,11 @@ class Voronoi {
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
                                 std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
                                 std::set<int>& on_boundary,
-                                int infty_id, std::set<int>& node_ids_to_remove){
+                                int infty_id, std::vector<int>& node_ids_to_remove){
 
         std::set<int> entered_first_time;
         int counter = infty_id;
-        node_ids_to_remove.insert(infty_id);
+        node_ids_to_remove.push_back(infty_id);
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
             // typename dcel_t::node_t* v_current_midpoint = new typename dcel_t::node_t();
