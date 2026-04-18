@@ -608,7 +608,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
     void remove_nodes(std::vector<int> nodes_ids){
 
         for (int node_id : nodes_ids){
-            std::cout << "Node with ID: " << node_id << std::endl;
             // Find node in nodes_
             auto node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [node_id](const node_t& p) {
@@ -620,28 +619,46 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
             // Neighbouring nodes
             std::vector<int> neighbours = node_it->neighbours();
+            for(int neigh_node_id: neighbours){
+                // Find node in nodes_
+                auto neigh_node_it = std::find_if(nodes_.begin(), nodes_.end(),
+                [neigh_node_id](const node_t& p) {
+                    return p.id() == neigh_node_id;
+                });
 
-            for (auto h : halfedges_){
-
-                if (h.node()->id() != node_id){
+                // Remove from the neighbour's halfedge_lookup_ the halfedge neigh->node_to_remove
+                neigh_node_it->remove_halfedge(node_id);
+            }
+            // Halfedges to remove
+            std::vector<halfedge_t*> halfedges_to_remove;
+            
+            for (auto it = halfedges_.begin(); it != halfedges_.end(); ++it){
+                if (it->node()->id() != node_id){
                     continue;
                 }
+                halfedges_to_remove.push_back(&(*it));
+            }
 
-                int neigh = h.twin()->node()->id();
+            for(halfedge_t* h: halfedges_to_remove){
+
+                int neigh = h->twin()->node()->id();
 
                 // Remove halfedge from halfedges list
-                int h_id = h.id();
-                int twin_id = h.twin()->id();
+                int h_id = h->id();
+                int twin_id = h->twin()->id();
 
-                h.set_node(nullptr);
-                h.set_twin(nullptr);
-                h.set_prev(nullptr);
-                h.set_next(nullptr);
+                h->twin()->set_node(nullptr);
+                h->twin()->set_twin(nullptr);
+                h->twin()->set_prev(nullptr);
+                h->twin()->set_next(nullptr);
 
-                h.twin()->set_node(nullptr);
-                h.twin()->set_twin(nullptr);
-                h.twin()->set_prev(nullptr);
-                h.twin()->set_next(nullptr);
+                h->set_node(nullptr);
+                h->set_twin(nullptr);
+                h->set_prev(nullptr);
+                h->set_next(nullptr);
+
+                // Set halfedge to nullptr
+                node_it->remove_halfedge(neigh);
 
                 halfedges_.remove_if([twin_id](const halfedge_t& he) {
                     return he.id() == twin_id;
@@ -649,116 +666,29 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 halfedges_.remove_if([h_id](const halfedge_t& he) {
                     return he.id() == h_id;
                 });
-
-                auto h_in_lookup = node_it->neighID2halfedge(neigh);
-
-                h_in_lookup->set_node(nullptr);
-                h_in_lookup->set_twin(nullptr);
-                h_in_lookup->set_prev(nullptr);
-                h_in_lookup->set_next(nullptr);
-
-                // Set halfedge to nullptr
-                node_it->remove_halfedge(neigh);
-
             }
-
-            // // Loop over its neighbours
-            // for (int neigh : neighbours){
-            //     std::cout << "Neighbour ID: " << neigh << std::endl;
-
-            //     // Retrieve halfedge
-            //     auto h = node_it->neighID2halfedge(neigh);
-
-            //     // Remove halfedge from halfedges list
-            //     int h_id = h->id();
-            //     int twin_id = h->twin()->id();
-
-            //     halfedges_.remove_if([twin_id](const halfedge_t& he) {
-            //         return he.id() == twin_id;
-            //     });
-            //     halfedges_.remove_if([h_id](const halfedge_t& he) {
-            //         return he.id() == h_id;
-            //     });
-
-            //     // Null halfedge node, twin, prev and next
-            //     h->set_node(nullptr);
-            //     h->set_twin(nullptr);
-            //     h->set_prev(nullptr);
-            //     h->set_next(nullptr);
-
-            //     // Set halfedge to nullptr
-            //     node_it->remove_halfedge(neigh);
-            // }
         }
-
         // Loop over points and remove them
         for (int node_id : nodes_ids){
-
             nodes_.remove_if([node_id](const node_t& n) {
                     return n.id() == node_id;
                 });
-
         }
     }
-
-    // void remove_nodes(std::vector<int> nodes_ids){
-    //     // Loop over points
-    //     for (pt : nodes_ids)
-    //         // Remove halfedge from point struct
-    //         pt->halfedge = nullptr;
-    //         // Loop over node2halfedges
-    //         for (halfedge : node2halfedges->second)
-    //             halfedge -> node = nullptr;
-    //             halfedge -> twin = nullptr;
-    //             halfedge -> prev = nullptr;
-    //             halfedge -> next = nullptr;
-    //             // Remove halfedge from list
-    //             halfedges_.remove(halfedge);
-
-    //     // Loop over points and remove them
-    //     for (pt: nodes_ids)
-    //         nodes_.remove(pt)
-    // }
-
-    // void remove_node_and_halfedges(std::set<int> nodes_to_remove){
-        
-    //     std::set<halfedge_t*> hedges_to_remove;
-    //     for (auto& h : halfedges_) {
-    //         bool remove = false;
-
-    //         if (h.node() && nodes_to_remove.count(h.node()->id()))
-    //             remove = true;
-
-    //         if (h.twin() && h.twin()->node() &&
-    //             nodes_to_remove.count(h.twin()->node()->id()))
-    //             remove = true;
-
-    //         if (remove)
-    //             hedges_to_remove.insert(&h);
-    //     }
-
-    //     for (halfedge_t* h : hedges_to_remove) {
-    //         if (h->twin() && !hedges_to_remove.count(h->twin()))
-    //             h->twin()->set_twin(nullptr);
-
-    //         if (h->node()) {
-    //             auto cur_halfedge_lookup = h->node()->halfedges_lookup_;   
-    //             for(auto cur_neigh_id : cur_halfedge_lookup.keys()){
-    //                 cur_halfedge_lookup.at(cur_neigh_id) = nullptr;
-    //             }
-    //         }
-
-    //     }
-
-    //     for (halfedge_t* h : hedges_to_remove) {
-    //         halfedges_.erase(h->it());
-    //     }
-
-    //     nodes_.remove_if([&](const node_t& n) {
-    //         return nodes_to_remove.count(n.id());
-    //     });
-    // }
+   
     
+node_t* find_node_by_coords(const coords_t& coords) {
+    auto it = std::find_if(nodes_.begin(), nodes_.end(),
+        [&](node_t& node) {
+            return node.coords() == coords;
+        });
+
+    if (it != nodes_.end()) {
+        return &(*it); 
+    }
+
+    return nullptr;
+}
 
     // function to add a polygon to a DCEL; if buidling_dcel is true, it means the DCEL is being built from scratch (i.e. in from_triangulation)
     halfedge_t* add_polygon(halfedge_t* v, const std::vector<node_t*>& nodes, bool building_dcel=false){
