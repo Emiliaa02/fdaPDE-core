@@ -194,16 +194,7 @@ class Voronoi {
                 }
             }
             // Compute the center of mass to perform the ordering
-            typename simplex_t::NodeType center_of_mass;
-            center_of_mass(0) = 0;
-            center_of_mass(1) = 0;
-            for(auto pt : pts){
-                auto pt_coords = pt->coords();
-                center_of_mass(0) += pt_coords(0);
-                center_of_mass(1) += pt_coords(1);
-            }
-            center_of_mass(0) = center_of_mass(0) / pts.size();
-            center_of_mass(1) = center_of_mass(1) / pts.size();
+            typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
 
             // Put in counterclockwise order the points
             std::sort(pts.begin(), pts.end(),
@@ -466,6 +457,20 @@ class Voronoi {
             }
         }
         throw std::runtime_error("Best cell ID is not included among Voronoi cell IDs");
+    }
+
+    typename simplex_t::NodeType compute_center_of_mass(std::vector<typename dcel_t::node_t*> points){
+        typename simplex_t::NodeType center_of_mass;
+		center_of_mass(0) = 0;
+        center_of_mass(1) = 0;
+        for(auto pt : points){
+            auto pt_coords = pt->coords();
+            center_of_mass(0) += pt_coords(0);
+            center_of_mass(1) += pt_coords(1);
+        }
+        center_of_mass(0) = center_of_mass(0) / points.size();
+        center_of_mass(1) = center_of_mass(1) / points.size();
+        return center_of_mass;
     }
 
 
