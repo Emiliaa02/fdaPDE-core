@@ -76,7 +76,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/north_italy/points.csv", "data/mesh/north_italy/elements.csv", "data/mesh/north_italy/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/c_shaped/points.csv", "data/mesh/c_shaped/elements.csv", "data/mesh/c_shaped/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
@@ -98,26 +98,27 @@ std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and "
 int i = 0;
 float sum=0;
 int unbdd=0;
-// for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-// 	auto measure = it->measure();
+for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
 
-//   if (measure != std::numeric_limits<double>::infinity()) {
-// 	sum+=measure;  
-//   i += 1;
+	auto measure = it->measure();
+
+  if (measure != std::numeric_limits<double>::infinity()) {
+	sum+=measure;  
+  i += 1;
 //   std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
-// }
-//   if(it->is_unbounded()){
+}
+  if(it->is_unbounded()){
 
-//     unbdd+=1;
-//   }
-// }
+    unbdd+=1;
+  }
+}
 
-// std::cout << "Printed area of " << i << " cells" << std::endl;
-// std::cout << "Area " << sum <<std::endl;
-// std::cout << "Unbounded " << unbdd << std::endl;
+std::cout << "Printed area of " << i << " cells" << std::endl;
+std::cout << "Area " << sum <<std::endl;
+std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/north_italy.json");
+voronoi_obj.export_to_json("plots/data/c_shaped.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
