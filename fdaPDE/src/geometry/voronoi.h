@@ -105,14 +105,13 @@ class Voronoi {
     // Update halfedges-cells structure in DCEL
     this->dcel_.update_halfedges_with_cells();
 
-
-    std::cout << "\nFinished constructor" << std::endl;
-
     std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
     std::set<int> on_boundary;
 
     // PER PROVARE SE RUNNA
     clip_voronoi(mesh, infty_id, out_of_boundary_d_centroids, old2new, vertexes2halfedge);
+
+    std::cout << "\nFinished constructor" << std::endl;
 
     }
 
@@ -158,9 +157,11 @@ class Voronoi {
         std::set<int> on_boundary;
         std::vector<int> node_ids_to_remove;
 
+        std::cout << "Before boundary cells detected" << std::endl;
         boundary_cells_detection(mesh, supplementary_points, on_boundary,
                                 out_of_boundary_d_centroids, d_centroid2v_vertex,
                                 infty_id, node_ids_to_remove);
+        std::cout << "Boundary cells detected" << std::endl;
 
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
@@ -296,6 +297,7 @@ class Voronoi {
             int v_vertex_id = d_centroid2v_vertex.at(d_centroid_id);
             node_ids_to_remove.push_back(v_vertex_id);
         }
+        std::cout << "Start loop over boundary edges" << std::endl;
         // Loop over mesh boundary edges of the Delaunay
         for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
             // Find closest v_centroid to d_edge_midpoint
@@ -310,12 +312,14 @@ class Voronoi {
             std::map<int, std::vector<int>> v_cell_halfedges = compute_v_cell2halfedges_(infty_id);
 
             // While list to check is not empty
+            std::cout << "Start while" << std::endl;
             while (to_check_v_cells.size() > 0){
                 typename dcel_t::cell_t cur_v_centroid = to_check_v_cells.front(); 
                 to_check_v_cells.pop_front();
                 std::vector<int> cur_v_cell_halfedges = v_cell_halfedges.at(cur_v_centroid.id());
 
                 // Loop over cur_v_cell halfedges
+                std::cout << "Start inner loop" << std::endl;
                 for(int cur_halfedge_id: cur_v_cell_halfedges){                  
                     typename dcel_t::halfedge_t cur_halfedge;
                     bool found_halfedge = false;
@@ -345,6 +349,7 @@ class Voronoi {
                     auto check_it = already_checked_halfedges.find(cur_halfedge_id);
                     if((check_it == already_checked_halfedges.end() || !check_it->second) && intersection_d_edges_.find(cur_halfedge_id) != intersection_d_edges_.end()
                        && intersection_d_edges_.at(cur_halfedge_id) == d_boundary_edge->id()){
+                        std::cout << "midpoint" << std::endl;
                         
                         // Cur_v_cell is a boundary cell
                         on_boundary.insert(cur_v_centroid.id());
@@ -391,6 +396,7 @@ class Voronoi {
                     }
                     // ... otherwise
                     else if (check_it == already_checked_halfedges.end() || !check_it->second){
+                        std::cout << "not midpoint" << std::endl;
                         // Check whether halfedge and boundary edge intersect in a point
                         bool check_intersection= false;
                         typename simplex_t::NodeType intersection_point;
@@ -427,6 +433,7 @@ class Voronoi {
                 
             }
         }
+        std::cout << "Finished" << std::endl;
 
     }
 
