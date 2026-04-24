@@ -194,6 +194,7 @@ class Voronoi {
             }
             // Compute the center of mass to perform the ordering
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
+            if(cur_cell_it->id() == 68){ std::cout<< "Center of mass: " << center_of_mass<<std::endl;}
 
             // Put in counterclockwise order the points
             std::sort(pts.begin(), pts.end(),
@@ -214,6 +215,9 @@ class Voronoi {
             }
             // Loop points one after the other
             for(auto pt = pts.begin(); pt != pts.end(); ++pt){
+                if(cur_cell_it->id() == 68){
+                    std::cout << (*pt)->coords()<<std::endl;
+                }
                 // Next point
                 auto pt_next = std::next(pt);
                 if (pt_next == pts.end()) {
