@@ -466,6 +466,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
     void export_to_json(const std::string& filename) const{
         json j;  
         j["nodes"] = json::array();
+        std::cout << "Nodes" << std::endl;
         for (auto it = nodes_cbegin(); it != nodes_cend(); ++it) {
             json node;
             node["id"] = it->id();
@@ -474,6 +475,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             j["nodes"].push_back(node);
         }  
         j["edges"] = json::array();
+        std::cout << "Edges" << std::endl;
         for (auto it = halfedges_cbegin(); it != halfedges_cend(); ++it) {
             json edge;
             edge["id"] = it->id();
@@ -485,6 +487,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
 
         j["cells"] = json::array();
+        std::cout << "Cells" << std::endl;
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
             json cell;
             cell["id"] = it->id();
@@ -501,6 +504,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
                     break;
                 }
                 cell["edges"].push_back(h->id());
+                if(h==nullptr){
+                    std::cout << "Nullpointer" << std::endl;
+                }
                 h = h->next();
             } while (h && h != it->halfedge());
             j["cells"].push_back(cell);
