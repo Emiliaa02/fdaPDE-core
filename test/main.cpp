@@ -68,6 +68,7 @@
 #include <fdaPDE/src/geometry/triangulation.h>
 #include <json.hpp>
 #include <limits>
+#include <chrono>
 using namespace fdapde;
 // using json = nlohmann::json;
 
@@ -76,11 +77,15 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/north_italy/points.csv", "data/mesh/north_italy/elements.csv", "data/mesh/north_italy/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_64/points.csv", "data/mesh/unit_square_64/elements.csv", "data/mesh/unit_square_64/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
+// auto start = std::chrono::high_resolution_clock::now();
 Voronoi<2, 2> voronoi_obj(mesh);
+// auto end = std::chrono::high_resolution_clock::now();
+// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+// std::cout << "Computational time: " << duration.count() << " us\n";
 
 std::cout << "Asking for nodes" << std::endl;
 int n_nodes = voronoi_obj.n_nodes();
@@ -118,7 +123,7 @@ std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and "
 // std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/north_italy.json");
+voronoi_obj.export_to_json("plots/data/unit_square_64.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
