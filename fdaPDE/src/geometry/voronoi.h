@@ -44,7 +44,6 @@ class Voronoi {
     std::list<int> not_created_cells;
     // Set to store d_centroids out of the boundary
     std::set<int> out_of_boundary_d_centroids;
-    auto start = std::chrono::high_resolution_clock::now();
     std::vector<std::vector<int>> node_neighbors_lookup = v_vertex_computation_(mesh, 
                                                                                 dcel_, 
                                                                                 old2new, 
@@ -54,9 +53,6 @@ class Voronoi {
                                                                                 cur_id,
                                                                                 out_of_boundary_d_centroids);
 
-    auto end_verted_computation = std::chrono::high_resolution_clock::now();
-    auto duration_1 = std::chrono::duration_cast<std::chrono::microseconds>(end_verted_computation - start);
-    std::cout << "Computational time 1: " << duration_1.count() << " us\n";
 
     // Define infinity v_vertex and add it to DCEL
     int infty_id = cur_id;
@@ -91,36 +87,20 @@ class Voronoi {
     
     }
 
-    auto end_for = std::chrono::high_resolution_clock::now();
-    auto duration_2 = std::chrono::duration_cast<std::chrono::microseconds>(end_for - start_for);
-    std::cout << "Computational time for loop: " << duration_2.count() << " us\n";
-
-    auto start_1 = std::chrono::high_resolution_clock::now();
     // Add to the DCEL structure the not created cells
     add_not_created_cells_(infty_id, not_created_cells, mesh, old2new, vertexes2halfedge);
-    auto end_here = std::chrono::high_resolution_clock::now();
-    auto duration_3 = std::chrono::duration_cast<std::chrono::microseconds>(end_here - start_1);
-    std::cout << "Computational not created cells: " << duration_3.count() << " us\n";
 
     // Connect the infinity halfedges
-    auto start_2 = std::chrono::high_resolution_clock::now();
     connect_infty_halfedges_(infty_id);
-    auto end_here_2 = std::chrono::high_resolution_clock::now();
-    auto duration_4 = std::chrono::duration_cast<std::chrono::microseconds>(end_here_2 - start_2);
-    std::cout << "Computational time for infinity halfedges: " << duration_4.count() << " us\n";
 
     // Update halfedges-cells structure in DCEL
-    auto start_3 = std::chrono::high_resolution_clock::now();
     this->dcel_.update_halfedges_with_cells();
-    auto end_here_3 = std::chrono::high_resolution_clock::now();
-    auto duration_5 = std::chrono::duration_cast<std::chrono::microseconds>(end_here_3 - start_3);
-    std::cout << "Computational time for infinity halfedges: " << duration_5.count() << " us\n";
 
     std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
     std::set<int> on_boundary;
 
     // PER PROVARE SE RUNNA
-    // clip_voronoi(mesh, infty_id, out_of_boundary_d_centroids, old2new, vertexes2halfedge);
+    clip_voronoi(mesh, infty_id, out_of_boundary_d_centroids, old2new, vertexes2halfedge);
 
     std::cout << "\nFinished constructor" << std::endl;
 
@@ -204,9 +184,12 @@ class Voronoi {
                     else{pts.push_back(node_ptr);};     
                 }
             }
+
+            if(cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
+                pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
+            }
             // Compute the center of mass to perform the ordering
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
-            if(cur_cell_it->id() == 68){ std::cout<< "Center of mass: " << center_of_mass<<std::endl;}
 
             // Put in counterclockwise order the points
             pts.sort([&](dcel_t::node_t* pa, dcel_t::node_t* pb)
@@ -225,26 +208,19 @@ class Voronoi {
                 std::cout << "LESS THAN 2 POINTS" << std::endl;
                 continue;
             }
-            std::vector<typename dcel_t::node_t*> on_boundary_pts;
-            for(auto pt = pts.begin(); pt != pts.end(); ++pt){
-                if((*pt)->on_boundary()){
-                    on_boundary_pts.push_back(*pt);
-                }  
-            }
-            // std::cout<<on_boundary_pts.size()<<std::endl;
-            if(on_boundary_pts.size()>2){
-                std::cout<<(*cur_cell_it).id()<<std::endl;
-            }
-            assert(on_boundary_pts.size() == 2);
-            auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
-            if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
-                pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
-            }
+            // std::vector<typename dcel_t::node_t*> on_boundary_pts;
+            // for(auto pt = pts.begin(); pt != pts.end(); ++pt){
+            //     if((*pt)->on_boundary() & (*pt)->id()>infty_id){
+            //         on_boundary_pts.push_back(*pt);
+            //     }  
+            // }
+            // assert(on_boundary_pts.size() == 2);
+            // auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
+            // if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
+            //     pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
+            // }
             // Loop points one after the other
             for(auto pt = pts.begin(); pt != pts.end(); ++pt){
-                if(cur_cell_it->id() == 68){
-                    std::cout << (*pt)->coords()<<std::endl;
-                }
                 // Next point
                 auto pt_next = std::next(pt);
                 if(pt_next == pts.end()) {
