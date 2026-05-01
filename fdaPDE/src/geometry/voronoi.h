@@ -41,7 +41,8 @@ class Voronoi {
     std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*> vertexes2halfedge;
     int cur_id = 0;
     // Structure to store cells without finite halfedges
-    std::list<int> not_created_cells;
+    // std::list<int> not_created_cells;
+    std::set<int> not_created_cells;
     // Set to store d_centroids out of the boundary
     std::set<int> out_of_boundary_d_centroids;
     std::vector<std::vector<int>> node_neighbors_lookup = v_vertex_computation_(mesh, 
@@ -900,7 +901,7 @@ class Voronoi {
                         std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                         const Eigen::Matrix<int, Eigen::Dynamic, 1>& neighbor_simplexes,
                         std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge,
-                        std::list<int>& not_created_cells) {  // --> O(N)
+                        std::set<int>& not_created_cells) {  // --> O(N)
         
         int count_neigh_tria = 0;
         int diff_id = 0;
@@ -960,24 +961,30 @@ class Voronoi {
                     }
 
                     // Add the new cell to the list if it is not yet added 
-                    if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){  // O(N)
+                    // if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end())
+                    if (cells_.find(curr_cell.id()) == cells_.end()){  // O(N)
                         if(cross < -1e-9){
                             // cross product < tolerance means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(current_twin_halfedge);
-                            cells_.push_back(curr_cell);
+                            // cells_.push_back(curr_cell);
+                            cells_[curr_cell.id()] = curr_cell;
                             dcel_.insert_cell(curr_cell);
-                            not_created_cells.remove(idx);
+                            // not_created_cells.remove(idx);
+                            not_created_cells.erase(idx);
                         }
                         else if(cross > 1e-9){
                             // cross product > tolerance means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(current_cell_halfedge);
-                            cells_.push_back(curr_cell);
+                            // cells_.push_back(curr_cell);
+                            cells_[curr_cell.id()] = curr_cell;
                             dcel_.insert_cell(curr_cell);
-                            not_created_cells.remove(idx);
+                            // not_created_cells.remove(idx);
+                            not_created_cells.erase(idx);
                         }
                         else{
-                            if(std::find(not_created_cells.begin(), not_created_cells.end(), idx) == not_created_cells.end()){ // O(N)
-                            not_created_cells.push_back(idx);}   
+                            // if(std::find(not_created_cells.begin(), not_created_cells.end(), idx) == not_created_cells.end())
+                            if (not_created_cells.find(idx) == not_created_cells.end()){ // O(N)
+                            not_created_cells.insert(idx);}   
                         }
                         }
 
@@ -1000,8 +1007,9 @@ class Voronoi {
 
     if(count_neigh_tria == 1){
         cell_t curr_cell_diff(diff_id);
-        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){  // O(N)
-            not_created_cells.push_back(diff_id);
+        // if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end())
+        if (cells_.find(curr_cell_diff.id()) == cells_.end()){  // O(N)
+            not_created_cells.insert(diff_id);
         }
     }
     }
@@ -1028,7 +1036,7 @@ class Voronoi {
     }
 
 
-    void add_not_created_cells_(int infty_id, std::list<int>& not_created_cells,
+    void add_not_created_cells_(int infty_id, std::set<int>& not_created_cells,
                                 const Triangulation<local_dim, embed_dim>& mesh,
                                 std::vector<int>& d_centroid2v_vertex,
                                 std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge){
@@ -1039,7 +1047,8 @@ class Voronoi {
 
             for(int internal_id : not_created_cells){
                 cell_t curr_cell(internal_id);
-                if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end()){
+                // if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end())
+                if (cells_.find(curr_cell.id()) != cells_.end()){
                     continue;
                 }
                 if (mesh.is_node_on_boundary(internal_id)){
@@ -1086,7 +1095,8 @@ class Voronoi {
                     if(breaking_check) break;
                 }
 
-                cells_.push_back(curr_cell);
+                // cells_.push_back(curr_cell);
+                cells_[curr_cell.id()] = curr_cell;
                 dcel_.insert_cell(curr_cell);
             }
         }
@@ -1120,7 +1130,8 @@ class Voronoi {
     }   
 
     // List of cells
-    std::list<typename dcel_t::cell_t> cells_;
+    // std::list<typename dcel_t::cell_t> cells_;
+    std::map<int, typename dcel_t::cell_t> cells_;
     // Midpoint id to egde id
     std::map<int, int> midpoint_to_edge_;
     // Intersection d_edges
