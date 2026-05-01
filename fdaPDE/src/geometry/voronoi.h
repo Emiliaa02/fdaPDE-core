@@ -15,6 +15,7 @@ class Voronoi {
     using triangulation_t = Triangulation<local_dim, embed_dim>;
     using triangle_t = Triangle<triangulation_t>;
     using cell_t = dcel_t::cell_t;
+    using coords_t = Eigen::Matrix<double, 1, embed_dim>;
     
     public:
 
@@ -61,8 +62,8 @@ class Voronoi {
     centroid_lookup[infty_id] = v_vertex_infty;
     typename dcel_t::node_t* infty_node = dcel_.insert_node(typename dcel_t::node_t(infty_id, false, v_vertex_infty));
 
+    auto start = std::chrono::high_resolution_clock::now();
     // Imagine to have the correspondence cell_id: centroid coordinates
-    auto start_for = std::chrono::high_resolution_clock::now();
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {  // O(N)
 
         // Retrieve the old ID of the current cell
@@ -85,9 +86,10 @@ class Voronoi {
         // Create cells
         create_cells_(dcel_, mesh, cell_id, old_cell_id, old2new,
                     centroid_lookup, neighbor_simplexes,vertexes2halfedge, not_created_cells);  // O(N)
-    
     }
-
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout<<"computational times: "<< duration.count() << std::endl;
     // Add to the DCEL structure the not created cells
     add_not_created_cells_(infty_id, not_created_cells, mesh, old2new, vertexes2halfedge);
 
@@ -146,6 +148,7 @@ class Voronoi {
                       std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge){
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
+        std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points_map = adjacent_points(mesh);
         std::map<int, typename dcel_t::node_t*> cell_centroid_coords;
         std::set<int> on_boundary;
         std::vector<int> node_ids_to_remove;
@@ -186,9 +189,6 @@ class Voronoi {
                 }
             }
 
-            if(cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
-                pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
-            }
             // Compute the center of mass to perform the ordering
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
 
@@ -204,6 +204,31 @@ class Voronoi {
                     return ang_a < ang_b;
                 }
             );
+
+            // Check if the centroid has to be included into the polygon
+            auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id());
+            if(centroid_it != cell_centroid_coords.end()){
+                double centroid_x = centroid_it-> second -> coords()(0);
+                double centroid_y = centroid_it-> second -> coords()(1);
+                std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
+                std::vector<coords_t> adjacent_nodes_on_boundary = adjacent_points_map.at(centroid_xy);
+                std::vector<typename dcel_t::node_t*> on_boundary_pts;
+                for(coords_t ad_node : adjacent_nodes_on_boundary){
+                     on_boundary_pts.push_back(dcel_.find_node_by_coords(ad_node));
+                }
+                auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);
+                auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
+
+                if (std::distance(pts.begin(), first_position) >
+                    std::distance(pts.begin(), second_position)) {
+                    std::swap(on_boundary_pts[0], on_boundary_pts[1]);
+                }
+
+                auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
+                if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
+                    pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
+                }
+            }
             
             if(pts.size() < 2){
                 std::cout << "LESS THAN 2 POINTS" << std::endl;
@@ -367,11 +392,13 @@ class Voronoi {
                             auto existing_node = dcel_.find_node_by_coords(centroid_coords);
                             if (existing_node != nullptr) {
                                 cell_centroid_coords[cur_v_centroid.id()] = existing_node;
+                                // supplementary_points[cur_v_centroid.id()].push_back(existing_node);
                             } else {
                                 typename dcel_t::node_t* v_centroid_coords = new typename dcel_t::node_t();
                                 v_centroid_coords->set_coords(centroid_coords);
                                 v_centroid_coords->set_id(counter++);
                                 cell_centroid_coords[cur_v_centroid.id()] = v_centroid_coords;
+                                // supplementary_points[cur_v_centroid.id()].push_back(v_centroid_coords);
                             }
                         }  
                         entered_first_time.insert(cur_v_centroid.id());
@@ -522,6 +549,28 @@ class Voronoi {
                 check_intersection = true;
             }
         }
+    }
+
+    std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){
+        std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points_map;
+        const Eigen::Matrix<double, Dynamic, Dynamic> mesh_nodes = mesh.nodes();
+        for(int id = 0; id < mesh.n_nodes(); ++id){
+            if(mesh.is_node_on_boundary(id)){
+                double centroid_x = mesh.node(id)(0);
+                double centroid_y = mesh.node(id)(1);
+                std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
+                adjacent_points_map[centroid_xy];
+                std::vector<int> adjacent_nodes_ids = mesh.node_one_ring(id);
+
+                for(int node_id: adjacent_nodes_ids){
+                    if(mesh.is_node_on_boundary(node_id)){
+                        coords_t node_coords = mesh.node(node_id);
+                        adjacent_points_map[centroid_xy].push_back(node_coords);
+                    }
+                }
+            }
+        }
+        return adjacent_points_map;
     }
 
     protected:
@@ -962,7 +1011,7 @@ class Voronoi {
 
                     // Add the new cell to the list if it is not yet added 
                     // if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end())
-                    if (cells_.find(curr_cell.id()) == cells_.end()){  // O(N)
+                    if (cells_.find(curr_cell.id()) == cells_.end()){  // O(logN)
                         if(cross < -1e-9){
                             // cross product < tolerance means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(current_twin_halfedge);
