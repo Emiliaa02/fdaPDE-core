@@ -62,20 +62,20 @@ class Voronoi {
 
     // Imagine to have the correspondence cell_id: centroid coordinates
     auto start_for = std::chrono::high_resolution_clock::now();
-    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {
+    for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {  // O(N)
 
         // Retrieve the old ID of the current cell
         int old_cell_id = it->id();
         // Retrieve new ID of the current cell
-        int cell_id = old2new.at(old_cell_id);
+        int cell_id = old2new.at(old_cell_id);  // O(logN)
         // Order the neighbouring cells in a counter-clockwise way
         std::vector<int> ordered_neigh_ids = order_neighbours_cclw_(cell_id, node_neighbors_lookup, old2new, 
-                                                                    centroid_lookup, midpoints_lookup);
+                                                                    centroid_lookup, midpoints_lookup);  // O(1)
         
         // Create and connect the halfedges
         if(!visited_centroids[cell_id]){
             create_and_connect_halfedges_(dcel_, cell_id, infty_id, infty_node, centroid_lookup, 
-                                        midpoints_lookup_raw, midpoints_lookup, ordered_neigh_ids, vertexes2halfedge);
+                                        midpoints_lookup_raw, midpoints_lookup, ordered_neigh_ids, vertexes2halfedge);  // O(logN)
             // Set the centroid as visited
             visited_centroids[cell_id] = true;
         }
@@ -83,7 +83,7 @@ class Voronoi {
         auto neighbor_simplexes = it->neighbors();
         // Create cells
         create_cells_(dcel_, mesh, cell_id, old_cell_id, old2new,
-                    centroid_lookup, neighbor_simplexes,vertexes2halfedge, not_created_cells);
+                    centroid_lookup, neighbor_simplexes,vertexes2halfedge, not_created_cells);  // O(N)
     
     }
 
@@ -762,9 +762,9 @@ class Voronoi {
         ordered_neigh_ids.reserve(v_vertex_neighbours_lookup.at(v_vertex_id).size());
 
         // Loop over neighbours
-        for (auto d_centroid_neigh_id : v_vertex_neighbours_lookup.at(v_vertex_id)) {
+        for (auto d_centroid_neigh_id : v_vertex_neighbours_lookup.at(v_vertex_id)) {  // Access O(1)
 
-            int neigh_id = retrieve_v_vertex_id_(d_centroid_neigh_id, d_centroid2v_vertex);
+            int neigh_id = retrieve_v_vertex_id_(d_centroid_neigh_id, d_centroid2v_vertex);  // O(1)
             
             ordered_neigh_ids.push_back(neigh_id);
         }
@@ -793,7 +793,7 @@ class Voronoi {
                             std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
                             std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                             const std::vector<int>& ordered_neigh_ids,
-                            std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge) {
+                            std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge) {  // --> O(logN)
                  
         int count_existing_neigh = 0;
         // Keep the first halfedge
@@ -802,7 +802,7 @@ class Voronoi {
         typename dcel_t::halfedge_t* e1 = nullptr;
         typename dcel_t::halfedge_t* e2 = nullptr;
         // Loop over neighbouring cells
-        for (auto neigh_id : ordered_neigh_ids) {
+        for (auto neigh_id : ordered_neigh_ids) {  // On average should be O(1)
             // flag for infinity node
             bool is_infinity = false;
             // id for computing the midpoint id
@@ -810,7 +810,7 @@ class Voronoi {
             // Create cell node
             typename dcel_t::node_t* v_vertex;
             // Find nodes in the DCEL structure
-            v_vertex = dcel_.find_node(dcel_.nodes().row(v_vertex_id));
+            v_vertex = dcel_.find_node(dcel_.nodes().row(v_vertex_id));  // O(1)
             // Create twin node 
             typename dcel_t::node_t* twin_node;
             // Create halfedge centroid -> neigh
@@ -825,7 +825,7 @@ class Voronoi {
                 }
                 // Retrieve centroid of the neighbouring cell
                 typename simplex_t::NodeType neigh_v_vertex = v_vertex_lookup.at(neigh_id);
-                twin_node = dcel_.find_node(dcel_.nodes().row(neigh_id));
+                twin_node = dcel_.find_node(dcel_.nodes().row(neigh_id));  // O(1)
             }
             else{
                 // The centroid of the neighbouring cell is the infinity node
@@ -838,8 +838,8 @@ class Voronoi {
             // If neighbouring cell was not visited, its node needs an halfedge
             if ((twin_node->neighID2halfedge(v_vertex_id)==nullptr) or (neigh_id == infty_id)){
                 // Set IDs based on counter
-                cell_halfedge = dcel_.emplace_halfedge(v_vertex);
-                twin_halfedge = dcel_.emplace_halfedge(twin_node);
+                cell_halfedge = dcel_.emplace_halfedge(v_vertex);  // O(1)
+                twin_halfedge = dcel_.emplace_halfedge(twin_node);  // O(1)
 
                 // Set halfedge to the cell centroid
                 v_vertex->set_halfedge(cell_halfedge);
@@ -856,7 +856,7 @@ class Voronoi {
                 vertexes2halfedge.insert({std::make_pair(twin_node->id(), v_vertex->id()), twin_halfedge});
 
                 // Update intersection d_edges map
-                if((is_infinity) and midpoints_lookup_raw.at(mid_id)==midpoints_lookup.at(mid_id)){
+                if((is_infinity) and midpoints_lookup_raw.at(mid_id)==midpoints_lookup.at(mid_id)){ // O(logN), anche se secondo me sarà tipo in media O(log(sqrt(N))), essendo i punti medi solo al bordo
                     intersection_d_edges_[cell_halfedge->id()]= midpoint_to_edge_.at(mid_id);
                     intersection_d_edges_[twin_halfedge->id()] = midpoint_to_edge_.at(mid_id);}
             }
@@ -900,7 +900,7 @@ class Voronoi {
                         std::vector<typename simplex_t::NodeType>& v_vertex_lookup,
                         const Eigen::Matrix<int, Eigen::Dynamic, 1>& neighbor_simplexes,
                         std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge,
-                        std::list<int>& not_created_cells) {
+                        std::list<int>& not_created_cells) {  // --> O(N)
         
         int count_neigh_tria = 0;
         int diff_id = 0;
@@ -908,14 +908,14 @@ class Voronoi {
         triangle_t curr_tria(d_centroid_id, &mesh); 
         Eigen::Matrix<int, Dynamic, 1> d_vertex_ids = curr_tria.node_ids();
         // Retrieve the centroid of the current cell
-        typename simplex_t::NodeType v_vertex = v_vertex_lookup.at(v_vertex_id);
+        typename simplex_t::NodeType v_vertex = v_vertex_lookup.at(v_vertex_id);  // O(logN)
         // Helper structure for cells creation
         
-        for (int neigh_d_centroid_id : neighbor_simplexes){
+        for (int neigh_d_centroid_id : neighbor_simplexes){  // O(1) on average
             if(neigh_d_centroid_id != -1){
                 count_neigh_tria += 1;
                 // Retrieve the triangle in the mesh using the old id
-                triangle_t tria(neigh_d_centroid_id, &mesh);  
+                triangle_t tria(neigh_d_centroid_id, &mesh);  // O(?)
                 auto neigh_d_vertex_ids = tria.node_ids();
 
                 // Find the common and different IDs between these vertices and the cell ones
@@ -935,15 +935,15 @@ class Voronoi {
                 assert(common.size()==2);
 
                 // Create the cells and associate the correct halfedges to them
-                for(int i=0; i<common.size(); ++i){
+                for(int i=0; i<common.size(); ++i){  // O(1)
 
                     int idx = common[i];
 
                     // Retrieve the corrensponding coordinates
-                    typename simplex_t::NodeType d_vertex = mesh.node(idx);
+                    typename simplex_t::NodeType d_vertex = mesh.node(idx); // O(1)
 
                     int neigh_v_vertex_id = d_centroid2v_vertex.at(neigh_d_centroid_id);
-                    typename simplex_t::NodeType neigh_v_vertex = v_vertex_lookup.at(neigh_v_vertex_id);
+                    typename simplex_t::NodeType neigh_v_vertex = v_vertex_lookup.at(neigh_v_vertex_id);  // O(logN)
                     // Create the new cell
                     cell_t curr_cell(idx);
 
@@ -952,7 +952,7 @@ class Voronoi {
                     typename simplex_t::NodeType v = neigh_v_vertex - d_vertex;
                     // Compute the cross product to assign the halfedges properly 
                     double cross = u(0)*v(1)-u(1)*v(0);
-                    typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge.find(std::make_pair(v_vertex_id, neigh_v_vertex_id))->second;
+                    typename dcel_t::halfedge_t* current_cell_halfedge = vertexes2halfedge.find(std::make_pair(v_vertex_id, neigh_v_vertex_id))->second;  // O(logN)
                     typename dcel_t::halfedge_t* current_twin_halfedge = vertexes2halfedge.find(std::make_pair(neigh_v_vertex_id, v_vertex_id))->second;
 
                     if (mesh.is_node_on_boundary(idx)){
@@ -960,7 +960,7 @@ class Voronoi {
                     }
 
                     // Add the new cell to the list if it is not yet added 
-                    if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){
+                    if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end()){  // O(N)
                         if(cross < -1e-9){
                             // cross product < tolerance means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(current_twin_halfedge);
@@ -976,8 +976,8 @@ class Voronoi {
                             not_created_cells.remove(idx);
                         }
                         else{
-                            if(std::find(not_created_cells.begin(), not_created_cells.end(), idx) == not_created_cells.end()){
-                            not_created_cells.push_back(idx);}
+                            if(std::find(not_created_cells.begin(), not_created_cells.end(), idx) == not_created_cells.end()){ // O(N)
+                            not_created_cells.push_back(idx);}   
                         }
                         }
 
@@ -1000,7 +1000,7 @@ class Voronoi {
 
     if(count_neigh_tria == 1){
         cell_t curr_cell_diff(diff_id);
-        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){
+        if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end()){  // O(N)
             not_created_cells.push_back(diff_id);
         }
     }
