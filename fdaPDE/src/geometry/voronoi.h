@@ -143,6 +143,31 @@ class Voronoi {
         this->dcel_.export_to_json(filename);
     }
 
+    
+    bool areAligned(const coords_t& A,
+                const coords_t& B,
+                const coords_t& C)
+            {
+                float x1 = A(0), y1 = A(1);
+                float x2 = B(0), y2 = B(1);
+                float x3 = C(0), y3 = C(1);
+
+                const float EPS = 1e-6f;
+
+                // 1. Check collinearity (cross product)
+                float cross = (x2 - x1) * (y3 - y1) -
+                            (y2 - y1) * (x3 - x1);
+
+                if (std::fabs(cross) > EPS)
+                    return false;
+
+                // 2. Check if B is between A and C (dot product)
+                float dot = (x2 - x1) * (x2 - x3) +
+                            (y2 - y1) * (y2 - y3);
+
+                return (dot <= EPS);
+            }
+
     void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id,
                       std::set<int>& out_of_boundary_d_centroids, std::vector<int>& d_centroid2v_vertex,
                       std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge){
@@ -208,25 +233,78 @@ class Voronoi {
             // Check if the centroid has to be included into the polygon
             auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id());
             if(centroid_it != cell_centroid_coords.end()){
+                // std::cout << "Found centroid" << std::endl;
                 double centroid_x = centroid_it-> second -> coords()(0);
                 double centroid_y = centroid_it-> second -> coords()(1);
                 std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
                 std::vector<coords_t> adjacent_nodes_on_boundary = adjacent_points_map.at(centroid_xy);
                 std::vector<typename dcel_t::node_t*> on_boundary_pts;
-                for(coords_t ad_node : adjacent_nodes_on_boundary){
-                     on_boundary_pts.push_back(dcel_.find_node_by_coords(ad_node));
+
+                for (auto pt_: pts){
+                    for (coords_t ad_node : adjacent_nodes_on_boundary){
+                        // std::cout << "Printing points: " << std::endl;
+                        // std::cout << ad_node << std::endl;
+                        // std::cout << pt_->coords() << std::endl;
+                        // std::cout << centroid_it-> second -> coords() << std::endl;
+                        // std::cout << "Condition on dot: " << areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
+                        // std::cout << "Condition 2a: " << (ad_node(0) != centroid_x) << std::endl;
+                        // std::cout << "Condition 2b: " << (ad_node(0) != centroid_x) << std::endl;
+                        if (std::fabs(centroid_x-0.0625)<1e-3 & centroid_y==1){
+                            std::cout << "Found 0" << std::endl;
+                            std::cout << "Printing points: " << std::endl;
+                            std::cout << ad_node << std::endl;
+                            std::cout << pt_->coords() << std::endl;
+                            std::cout << centroid_it-> second -> coords() << std::endl;
+                            std::cout << "Condition: " << areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
+                        }
+                        if((ad_node(0) != centroid_x | ad_node(1) != centroid_y) & areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords())){
+                            // std::cout << "Aligned " << std::endl;
+                            // std::cout << pt_->coords() << std::endl;
+                            // std::cout << ad_node << std::endl;
+                            // std::cout << centroid_it-> second -> coords() << std::endl;
+                            on_boundary_pts.push_back(pt_);
+                            break;
+                        }
+                    }
                 }
+
+                // for(coords_t ad_node : adjacent_nodes_on_boundary){  // Occhio perchè adjacent nodes on boundary contiene anche il centroide stesso
+                //     if (ad_node(0) != centroid_x & ad_node(1) != centroid_y)
+                //     {
+                //         on_boundary_pts.push_back(dcel_.find_node_by_coords(ad_node));
+                //     }
+                // }
+
                 auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);
                 auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
 
+                // if (std::distance(pts.begin(), first_position) >
+                //     std::distance(pts.begin(), second_position)) {
+                //     std::swap(on_boundary_pts[0], on_boundary_pts[1]);
+                // }
+
+                // auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
+                // if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){  // Secondo me la seconda condizione non serve, perchè siamo già nell'if
+                //     // std::cout << "Adding stuff in pts" << std::endl;
+                //     pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
+                //     typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                // }
+
                 if (std::distance(pts.begin(), first_position) >
-                    std::distance(pts.begin(), second_position)) {
-                    std::swap(on_boundary_pts[0], on_boundary_pts[1]);
+                    std::distance(pts.begin(), second_position))
+                {
+                    std::swap(first_position, second_position);
                 }
 
-                auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
-                if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
-                    pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
+                if (first_position != pts.end() && second_position != pts.end()){
+                    if(first_position == pts.begin() && second_position == std::prev(pts.end())){
+                        pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
+                        typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                    }
+                    else{
+                        pts.insert(std::next(first_position), cell_centroid_coords.at((*cur_cell_it).id()));
+                        typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                    }
                 }
             }
             
@@ -563,7 +641,7 @@ class Voronoi {
                 std::vector<int> adjacent_nodes_ids = mesh.node_one_ring(id);
 
                 for(int node_id: adjacent_nodes_ids){
-                    if(mesh.is_node_on_boundary(node_id)){
+                    if(mesh.is_node_on_boundary(node_id)){   // TODO: here you should check that the entire edge is actually at the boundary, otherwise you get issues (see unit square)
                         coords_t node_coords = mesh.node(node_id);
                         adjacent_points_map[centroid_xy].push_back(node_coords);
                     }
