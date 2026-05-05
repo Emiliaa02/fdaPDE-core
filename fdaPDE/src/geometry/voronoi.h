@@ -240,6 +240,32 @@ class Voronoi {
                 std::vector<coords_t> adjacent_nodes_on_boundary = adjacent_points_map.at(centroid_xy);
                 std::vector<typename dcel_t::node_t*> on_boundary_pts;
 
+
+
+
+
+
+
+                bool punto_trovato = false;
+                if (std::fabs(centroid_x - 10.062441180592224) < 1e-4 && std::fabs(centroid_y - 44.080501886987065) < 1e-4){
+                    punto_trovato=true;
+                    std::cout << "Puntooo" << std::endl;
+                    for(typename dcel_t::node_t* supp_pt : check_supp_pt->second){
+                        std::cout << supp_pt->coords() << std::endl;
+                    }
+                }
+
+
+
+
+
+
+
+
+
+
+
+
                 for (auto pt_: pts){
                     for (coords_t ad_node : adjacent_nodes_on_boundary){
                         // std::cout << "Printing points: " << std::endl;
@@ -249,46 +275,16 @@ class Voronoi {
                         // std::cout << "Condition on dot: " << areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
                         // std::cout << "Condition 2a: " << (ad_node(0) != centroid_x) << std::endl;
                         // std::cout << "Condition 2b: " << (ad_node(0) != centroid_x) << std::endl;
-                        if (std::fabs(centroid_x-0.0625)<1e-3 & centroid_y==1){
-                            std::cout << "Found 0" << std::endl;
-                            std::cout << "Printing points: " << std::endl;
-                            std::cout << ad_node << std::endl;
-                            std::cout << pt_->coords() << std::endl;
-                            std::cout << centroid_it-> second -> coords() << std::endl;
-                            std::cout << "Condition: " << areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
-                        }
                         if((ad_node(0) != centroid_x | ad_node(1) != centroid_y) & areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords())){
-                            // std::cout << "Aligned " << std::endl;
-                            // std::cout << pt_->coords() << std::endl;
-                            // std::cout << ad_node << std::endl;
-                            // std::cout << centroid_it-> second -> coords() << std::endl;
                             on_boundary_pts.push_back(pt_);
                             break;
                         }
                     }
                 }
 
-                // for(coords_t ad_node : adjacent_nodes_on_boundary){  // Occhio perchè adjacent nodes on boundary contiene anche il centroide stesso
-                //     if (ad_node(0) != centroid_x & ad_node(1) != centroid_y)
-                //     {
-                //         on_boundary_pts.push_back(dcel_.find_node_by_coords(ad_node));
-                //     }
-                // }
 
                 auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);
                 auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
-
-                // if (std::distance(pts.begin(), first_position) >
-                //     std::distance(pts.begin(), second_position)) {
-                //     std::swap(on_boundary_pts[0], on_boundary_pts[1]);
-                // }
-
-                // auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
-                // if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){  // Secondo me la seconda condizione non serve, perchè siamo già nell'if
-                //     // std::cout << "Adding stuff in pts" << std::endl;
-                //     pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
-                //     typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
-                // }
 
                 if (std::distance(pts.begin(), first_position) >
                     std::distance(pts.begin(), second_position))
@@ -312,17 +308,7 @@ class Voronoi {
                 std::cout << "LESS THAN 2 POINTS" << std::endl;
                 continue;
             }
-            // std::vector<typename dcel_t::node_t*> on_boundary_pts;
-            // for(auto pt = pts.begin(); pt != pts.end(); ++pt){
-            //     if((*pt)->on_boundary() & (*pt)->id()>infty_id){
-            //         on_boundary_pts.push_back(*pt);
-            //     }  
-            // }
-            // assert(on_boundary_pts.size() == 2);
-            // auto second_on_boundary = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
-            // if(second_on_boundary != pts.end() & cell_centroid_coords.find((*cur_cell_it).id()) != cell_centroid_coords.end()){
-            //     pts.insert(second_on_boundary, cell_centroid_coords.at((*cur_cell_it).id()));
-            // }
+
             // Loop points one after the other
             for(auto pt = pts.begin(); pt != pts.end(); ++pt){
                 // Next point
@@ -629,25 +615,64 @@ class Voronoi {
         }
     }
 
-    std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){
-        std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points_map;
-        const Eigen::Matrix<double, Dynamic, Dynamic> mesh_nodes = mesh.nodes();
-        for(int id = 0; id < mesh.n_nodes(); ++id){
-            if(mesh.is_node_on_boundary(id)){
-                double centroid_x = mesh.node(id)(0);
-                double centroid_y = mesh.node(id)(1);
-                std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
-                adjacent_points_map[centroid_xy];
-                std::vector<int> adjacent_nodes_ids = mesh.node_one_ring(id);
+    // std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){
+    //     std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points_map;
+    //     const Eigen::Matrix<double, Dynamic, Dynamic> mesh_nodes = mesh.nodes();
+    //     for(int id = 0; id < mesh.n_nodes(); ++id){
+    //         if(mesh.is_node_on_boundary(id)){
+    //             double centroid_x = mesh.node(id)(0);
+    //             double centroid_y = mesh.node(id)(1);
+    //             std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
+    //             adjacent_points_map[centroid_xy];
+    //             std::vector<int> adjacent_nodes_ids = mesh.node_one_ring(id);
 
-                for(int node_id: adjacent_nodes_ids){
-                    if(mesh.is_node_on_boundary(node_id)){   // TODO: here you should check that the entire edge is actually at the boundary, otherwise you get issues (see unit square)
-                        coords_t node_coords = mesh.node(node_id);
-                        adjacent_points_map[centroid_xy].push_back(node_coords);
-                    }
-                }
+    //             for(int node_id: adjacent_nodes_ids){
+    //                 if(mesh.is_node_on_boundary(node_id)){   // TODO: here you should check that the entire edge is actually at the boundary, otherwise you get issues (see unit square)
+    //                     coords_t node_coords = mesh.node(node_id);
+    //                     adjacent_points_map[centroid_xy].push_back(node_coords);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return adjacent_points_map;
+    // }
+
+    std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){
+
+        std::map<std::pair<double, double>, std::vector<coords_t>> adjacent_points_map;
+        
+        // Loop over boundary edges
+        for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
+
+            // Define first and second endpoints
+            Eigen::Matrix<int, Dynamic, 1> endpoints_matrix = d_boundary_edge -> node_ids();
+            int first_endpoint_id = endpoints_matrix(0);
+            int second_endpoint_id = endpoints_matrix(1);
+            coords_t first_endpoint = mesh.node(first_endpoint_id);
+            coords_t second_endpoint = mesh.node(second_endpoint_id);
+            std::pair<double, double> first_endpoint_pair = std::make_pair(first_endpoint(0), first_endpoint(1));
+            std::pair<double, double> second_endpoint_pair = std::make_pair(second_endpoint(0), second_endpoint(1));
+
+            // If first endpoint already in map, add second endpoint
+            if(adjacent_points_map.find(first_endpoint_pair) != adjacent_points_map.end()){
+                adjacent_points_map[first_endpoint_pair].push_back(second_endpoint);
+            }
+            // Else, create its entry and add second endpoint
+            else{
+                adjacent_points_map[first_endpoint_pair];
+                adjacent_points_map[first_endpoint_pair].push_back(second_endpoint);
+            }
+
+            // Repeat for second endpoint
+            if(adjacent_points_map.find(second_endpoint_pair) != adjacent_points_map.end()){
+                adjacent_points_map[second_endpoint_pair].push_back(first_endpoint);
+            }
+            else{
+                adjacent_points_map[second_endpoint_pair];
+                adjacent_points_map[second_endpoint_pair].push_back(first_endpoint);
             }
         }
+
         return adjacent_points_map;
     }
 
