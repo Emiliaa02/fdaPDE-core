@@ -104,9 +104,6 @@ class Voronoi {
 
     // PER PROVARE SE RUNNA
     clip_voronoi(mesh, infty_id, out_of_boundary_d_centroids, old2new, vertexes2halfedge);
-    // std::map<int, int> prova_inter = n_intersections_halfedges_boundary(out_of_boundary_d_centroids, infty_id);
-    // std::cout<<"Halfedge number 447 count: "<<prova_inter.at(447)<<std::endl;
-    // std::cout<<"Halfedge number 446 count: "<<prova_inter.at(446)<<std::endl;
 
     std::cout << "\nFinished constructor" << std::endl;
 
@@ -171,23 +168,22 @@ class Voronoi {
                 return (dot <= EPS);
             }
 
-    
-    std::map<int, int> n_intersections_halfedges_boundary(std::set<int>& out_of_boundary_d_centroids, int infty_id){
 
-        std::map<int, int> n_intersections_halfedges_boundary;
-        for(auto it = this->dcel_.halfedges_begin(); it != this->dcel_.halfedges_end(); ++it){
-            int count = 0;
-            if(it->node()->id() == infty_id || out_of_boundary_d_centroids.find(it->node()->id()) != out_of_boundary_d_centroids.end()){
-                count += 1;
-            }
-            if(it->twin()->node()->id() == infty_id || out_of_boundary_d_centroids.find(it->twin()->node()->id()) != out_of_boundary_d_centroids.end()){
-                count += 1;
-            }
-            n_intersections_halfedges_boundary[it->id()] = count;
-        }
-        return n_intersections_halfedges_boundary;
-    }
+    // std::map<int, int> n_intersections_halfedges_boundary(std::set<int>& out_of_boundary_d_centroids, int infty_id){
 
+    //     std::map<int, int> n_intersections_halfedges_boundary;
+    //     for(auto it = this->dcel_.halfedges_begin(); it != this->dcel_.halfedges_end(); ++it){
+    //         int count = 0;
+    //         if(it->node()->id() == infty_id || out_of_boundary_d_centroids.find(it->node()->id()) != out_of_boundary_d_centroids.end()){
+    //             count += 1;
+    //         }
+    //         if(it->twin()->node()->id() == infty_id || out_of_boundary_d_centroids.find(it->twin()->node()->id()) != out_of_boundary_d_centroids.end()){
+    //             count += 1;
+    //         }
+    //         n_intersections_halfedges_boundary[it->id()] = count;
+    //     }
+    //     return n_intersections_halfedges_boundary;
+    // }
 
     void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id,
                       std::set<int>& out_of_boundary_d_centroids, std::vector<int>& d_centroid2v_vertex,
@@ -408,7 +404,6 @@ class Voronoi {
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords){
 
         std::set<int> entered_first_time;
-        // std::map<int, int> n_intersections = n_intersections_halfedges_boundary(out_of_boundary_d_centroids, infty_id);
         int counter = infty_id + 1;
         node_ids_to_remove.push_back(infty_id);
         for(int d_centroid_id : out_of_boundary_d_centroids){
@@ -463,9 +458,6 @@ class Voronoi {
 
                     // If we already know halfedge intersects boundary edge (necessarily on the midpoint)...
                     auto check_it = already_checked_halfedges.find(cur_halfedge_id);
-                    
-                    // std::cout<<intersection_d_edges_.at(446)<<std::endl; --> 222
-
                     if((check_it == already_checked_halfedges.end() || !check_it->second) && intersection_d_edges_.find(cur_halfedge_id) != intersection_d_edges_.end()
                        && intersection_d_edges_.at(cur_halfedge_id) == d_boundary_edge->id()){
                         
@@ -520,9 +512,7 @@ class Voronoi {
                         // Check whether halfedge and boundary edge intersect in a point
                         bool check_intersection= false;
                         typename simplex_t::NodeType intersection_point;
-    
                         find_intersection(mesh, cur_halfedge, *d_boundary_edge, check_intersection, intersection_point);
-                        if(cur_halfedge.id() == 447){std::cout<<"447"<<std::endl;}
 
                         // If you found it...
                         if(check_intersection){ 
@@ -619,12 +609,6 @@ class Voronoi {
         Eigen::Matrix<int, Dynamic, 1> node_ids = d_boundary_edge.node_ids();
         Eigen::Matrix<double, 2, 1> q1 = mesh.node(node_ids[0]);
         Eigen::Matrix<double, 2, 1> q2 = mesh.node(node_ids[1]);
-        // if(cur_halfedge.id() == 447){
-        //     std::cout<<"p1 half: "<<p1<<std::endl;
-        //     std::cout<<"p2 half: "<<p2<<std::endl;
-        //     std::cout<<"q1 bound: "<<q1<<std::endl;
-        //     std::cout<<"q2 bound: "<<q2<<std::endl;
-        // }
 
         // Compute differences
         double dx1 = p2(0) - p1(0);
