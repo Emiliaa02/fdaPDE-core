@@ -105,8 +105,10 @@ int i = 0;
 float sum=0;
 int unbdd=0;
 for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+  std::cout << "Cell: " << it->id() << std::endl;
 
 	auto measure = it->measure();
+  std::cout << "Computed measure" << std::endl;
 
   if (measure != std::numeric_limits<double>::infinity()) {
 	sum+=measure;  
