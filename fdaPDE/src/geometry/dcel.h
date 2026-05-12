@@ -489,9 +489,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
         j["cells"] = json::array();
         std::cout << "Cells" << std::endl;
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
+            std::cout << "Cell ID: " << it->id() << std::endl;
             json cell;
             cell["id"] = it->id();
-            std::cout<<"Cell ID: "<< it->id()<<std::endl;
             cell["edges"] = json::array();
     
             auto h = it->halfedge();
@@ -504,7 +504,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
                     std::cerr << "ERROR: null halfedge in cell " << it->id() << std::endl;
                     break;
                 }
+                // std::cout << "Is h nullptr? " << (h==nullptr) << std::endl;
                 cell["edges"].push_back(h->id());
+                // std::cout << "Pushed" << std::endl;
                 if(h==nullptr){
                     std::cout << "Nullpointer" << std::endl;
                 }
