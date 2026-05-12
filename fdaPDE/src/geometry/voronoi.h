@@ -199,13 +199,15 @@ class Voronoi {
         std::map<int, typename dcel_t::node_t*> cell_centroid_coords;
         std::set<int> on_boundary;
         std::vector<int> node_ids_to_remove;
-
+        
         boundary_cells_detection(mesh, supplementary_points, on_boundary,
                                 out_of_boundary_d_centroids, d_centroid2v_vertex,
                                 infty_id, node_ids_to_remove, cell_centroid_coords, infty_halfedges_midpoints, midpoints_lookup);
 
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
+            std::cout << "Begin for on cells" << std::endl;
+
             if(on_boundary.find((*cur_cell_it).id()) == on_boundary.end()){ continue; };
             typename dcel_t::halfedge_t* start = nullptr;
             typename dcel_t::halfedge_t* cur_halfedge = nullptr;
@@ -235,9 +237,11 @@ class Voronoi {
                     else{pts.push_back(node_ptr);};     
                 }
             }
+            std::cout << "Compiled pts without centroid" << std::endl;
 
             // Compute the center of mass to perform the ordering
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
+            std::cout << "Computed center of mass" << std::endl;
 
             // Put in counterclockwise order the points
             pts.sort([&](dcel_t::node_t* pa, dcel_t::node_t* pb)
@@ -255,25 +259,25 @@ class Voronoi {
             // Check if the centroid has to be included into the polygon
             auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id());
             if(centroid_it != cell_centroid_coords.end()){
-                // std::cout << "Found centroid" << std::endl;
+                std::cout << "Found centroid" << std::endl;
                 double centroid_x = centroid_it-> second -> coords()(0);
                 double centroid_y = centroid_it-> second -> coords()(1);
                 std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
-                if(adjacent_points_map.find(centroid_xy) == adjacent_points_map.end()){
-                    std::cout<<"row 263"<<std::endl;
-                }
                 std::vector<coords_t> adjacent_nodes_on_boundary = adjacent_points_map.at(centroid_xy);
+                if ((*cur_cell_it).id()==179){
+                    std::cout << "size of adjacent nodes: " << adjacent_nodes_on_boundary.size() << std::endl;
+                }
                 std::vector<typename dcel_t::node_t*> on_boundary_pts;
+            
 
                 for (auto pt_: pts){
+                    if ((*cur_cell_it).id()==179){
+                        std::cout << "Point in pts: " << pt_->coords() << std::endl;
+                    }
                     for (coords_t ad_node : adjacent_nodes_on_boundary){
-                        // std::cout << "Printing points: " << std::endl;
-                        // std::cout << ad_node << std::endl;
-                        // std::cout << pt_->coords() << std::endl;
-                        // std::cout << centroid_it-> second -> coords() << std::endl;
-                        // std::cout << "Condition on dot: " << areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
-                        // std::cout << "Condition 2a: " << (ad_node(0) != centroid_x) << std::endl;
-                        // std::cout << "Condition 2b: " << (ad_node(0) != centroid_x) << std::endl;
+                        if ((*cur_cell_it).id()==179){
+                            std::cout << "Adjacent node: " << ad_node << std::endl;
+                        }
                         if((ad_node(0) != centroid_x | ad_node(1) != centroid_y) & areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords())){
                             on_boundary_pts.push_back(pt_);
                             break;
@@ -281,8 +285,12 @@ class Voronoi {
                     }
                 }
 
-
-                auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);
+                if (on_boundary_pts.size() < 2){
+                    std::cout << "ID of the cell: " << (*cur_cell_it).id() << std::endl;
+                    throw std::runtime_error("on_boundary_pts has size < 2");
+                }
+                
+                auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);  // IL PROBLEMA E' CHE on_boundary_pts NON HA ELEMENTI
                 auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
 
                 if (std::distance(pts.begin(), first_position) >
@@ -293,16 +301,10 @@ class Voronoi {
 
                 if (first_position != pts.end() && second_position != pts.end()){
                     if(first_position == pts.begin() && second_position == std::prev(pts.end())){
-                        if(cell_centroid_coords.find((*cur_cell_it).id()) == cell_centroid_coords.end()){
-                            std::cout<<"row 297"<<std::endl;
-                        }
                         pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
                         typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
                     }
                     else{
-                        if(cell_centroid_coords.find((*cur_cell_it).id()) == cell_centroid_coords.end()){
-                            std::cout<<"row 304"<<std::endl;
-                        }
                         pts.insert(std::next(first_position), cell_centroid_coords.at((*cur_cell_it).id()));
                         typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
                     }
@@ -315,6 +317,7 @@ class Voronoi {
             }
 
             // Loop points one after the other
+            std::cout << "Begin loop" << std::endl;
             for(auto pt = pts.begin(); pt != pts.end(); ++pt){
                 // Next point
                 auto pt_next = std::next(pt);
@@ -363,17 +366,25 @@ class Voronoi {
                 // Previous halfedge becomes current halfedge
                 prev_halfedge = cur_halfedge;
         }
+        std::cout << "End loop" << std::endl;
         if (start){
+            std::cout << "Inside start" << std::endl;
             cur_halfedge -> set_next(start);
+            std::cout << "Set next" << std::endl;
             start -> set_prev(cur_halfedge);
+            std::cout << "Set prev" << std::endl;
         }
 
         // Declare cell as clipped
         cur_cell_it->clipped();
-    }
+        std::cout << "Set as clipped" << std::endl;
+        }
+
     // Remove the nodes outside the domain and the corrensponding halfedges
+    std::cout << "Begin removing nodes" << std::endl;
     this->dcel_.remove_nodes(node_ids_to_remove);
-}   
+    std::cout << "Removed nodes to remove" << std::endl;
+    }   
 
 
     // What the following function does is understand which v_cells are on the boundary
@@ -610,6 +621,16 @@ class Voronoi {
 
             // Loop over d_edges connected to that d_vertex
             for (int neigh_d_vertex_id : neigh_d_vertexes_ids){
+                bool skippa = true;
+                for (auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_begin(); ++delaunay_edge){
+                    if ( (delaunay_edge->node_ids()(0) == d_vertex_id && delaunay_edge->node_ids()(1) == neigh_d_vertex_id) ||
+                         (delaunay_edge->node_ids()(1) == d_vertex_id && delaunay_edge->node_ids()(0) == neigh_d_vertex_id)){
+                            skippa = false;
+                         }
+                }
+                if (skippa){
+                    continue;
+                }
 
                 coords_t neigh_coords = mesh.node(neigh_d_vertex_id);
                 std::vector<typename dcel_t::halfedge_t*> v_cell_halfedges =  v_cell.cell_edges();
@@ -627,6 +648,7 @@ class Voronoi {
                     if (v_cell_halfedge->node()->id()==infty_id){
                         if(infty_halfedges_midpoints.find(v_cell_halfedge->id())== infty_halfedges_midpoints.end()){
                             std::cout<<"row 632"<<std::endl;
+                            std::cout << "Halfedge ID: " << v_cell_halfedge->id() << std::endl;
                         }
                         if(midpoints_lookup.find(infty_halfedges_midpoints.at(v_cell_halfedge->id()))== midpoints_lookup.end()){
                             std::cout<<"row 635"<<std::endl;
@@ -1221,6 +1243,8 @@ class Voronoi {
                 if((is_infinity) and midpoints_lookup_raw.at(mid_id)==midpoints_lookup.at(mid_id)){ // O(logN), anche se secondo me sarà tipo in media O(log(sqrt(N))), essendo i punti medi solo al bordo
                     intersection_d_edges_[cell_halfedge->id()]= midpoint_to_edge_.at(mid_id);
                     intersection_d_edges_[twin_halfedge->id()] = midpoint_to_edge_.at(mid_id);
+                }
+                if (is_infinity){
                     infty_halfedges_midpoints[cell_halfedge->id()] = mid_id;
                     infty_halfedges_midpoints[twin_halfedge->id()] = mid_id;
                 }

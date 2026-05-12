@@ -78,7 +78,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/north_italy/points.csv", "data/mesh/north_italy/elements.csv", "data/mesh/north_italy/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/quasi_circle/points.csv", "data/mesh/quasi_circle/elements.csv", "data/mesh/quasi_circle/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
@@ -105,10 +105,10 @@ int i = 0;
 float sum=0;
 int unbdd=0;
 for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
-  std::cout << "Cell: " << it->id() << std::endl;
+  // std::cout << "Cell: " << it->id() << std::endl;
 
 	auto measure = it->measure();
-  std::cout << "Computed measure" << std::endl;
+  // std::cout << "Computed measure" << std::endl;
 
   if (measure != std::numeric_limits<double>::infinity()) {
 	sum+=measure;  
@@ -121,12 +121,12 @@ for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
   }
 }
 
-// std::cout << "Printed area of " << i << " cells" << std::endl;
+std::cout << "Printed area of " << i << " cells" << std::endl;
 std::cout << "Area " << sum <<std::endl;
-// std::cout << "Unbounded " << unbdd << std::endl;
+std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/north_italy.json");
+voronoi_obj.export_to_json("plots/data/quasi_circle.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
