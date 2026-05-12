@@ -147,29 +147,31 @@ class Voronoi {
     }
 
     
-    bool areAligned(const coords_t& A,
-                const coords_t& B,
-                const coords_t& C)
-            {
-                float x1 = A(0), y1 = A(1);
-                float x2 = B(0), y2 = B(1);
-                float x3 = C(0), y3 = C(1);
+    // bool areAligned(const coords_t& A,
+    //             const coords_t& B,
+    //             const coords_t& C)
+    //         {
+    //             double x1 = A(0), y1 = A(1);
+    //             double x2 = B(0), y2 = B(1);
+    //             double x3 = C(0), y3 = C(1);
 
-                const float EPS = 1e-6f;
+    //             const double EPS = 1e-6f;
 
-                // 1. Check collinearity (cross product)
-                float cross = (x2 - x1) * (y3 - y1) -
-                            (y2 - y1) * (x3 - x1);
+    //             // 1. Check collinearity (cross product)
+    //             double cross = (x2 - x1) * (y3 - y1) -
+    //                         (y2 - y1) * (x3 - x1);
 
-                if (std::fabs(cross) > EPS)
-                    return false;
+    //             if (std::fabs(cross) > EPS){
+    //                 return false;
+    //             }
 
-                // 2. Check if B is between A and C (dot product)
-                float dot = (x2 - x1) * (x2 - x3) +
-                            (y2 - y1) * (y2 - y3);
+    //             // 2. Check if B is between A and C (dot product)
+    //             double dot = (x2 - x1) * (x2 - x3) +
+    //                         (y2 - y1) * (y2 - y3);
 
-                return (dot <= EPS);
-            }
+    //             // std::cout<<"B è tra A e C: "<<(dot <= EPS)<<std::endl;
+    //             return (dot <= EPS);
+    //         }
 
 
     // std::map<int, int> n_intersections_halfedges_boundary(std::set<int>& out_of_boundary_d_centroids, int infty_id){
@@ -199,10 +201,12 @@ class Voronoi {
         std::map<int, typename dcel_t::node_t*> cell_centroid_coords;
         std::set<int> on_boundary;
         std::vector<int> node_ids_to_remove;
+        std::map<std::pair<coords_t, coords_t>, coords_t> edge_vertexes2intersection;
         
         boundary_cells_detection(mesh, supplementary_points, on_boundary,
                                 out_of_boundary_d_centroids, d_centroid2v_vertex,
-                                infty_id, node_ids_to_remove, cell_centroid_coords, infty_halfedges_midpoints, midpoints_lookup);
+                                infty_id, node_ids_to_remove, cell_centroid_coords, infty_halfedges_midpoints,
+                                midpoints_lookup, edge_vertexes2intersection);
 
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
@@ -219,15 +223,10 @@ class Voronoi {
             for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){
                 auto to_exclude_it = std::find(node_ids_to_remove.begin(), node_ids_to_remove.end(), (*cell_node)->id());
                 if(to_exclude_it == node_ids_to_remove.end()){
-                    if((*cur_cell_it).id()==24){std::cout<<(*cell_node)->coords()<<std::endl;}
                     pts.push_back(*cell_node);
                 }
             }
-            // for(auto pt: pts){
-            //     if ((*cur_cell_it).id()==24){
-            //         std::cout << "Point in pts: " << pt->coords() << std::endl;
-            //     }
-            // }
+
 
             // Get supplementary points
             auto check_supp_pt = supplementary_points.find(cur_cell_it->id());
@@ -268,22 +267,26 @@ class Voronoi {
                 double centroid_y = centroid_it-> second -> coords()(1);
                 std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
                 std::vector<coords_t> adjacent_nodes_on_boundary = adjacent_points_map.at(centroid_xy);
-                // if ((*cur_cell_it).id()==179){
-                //     std::cout << "size of adjacent nodes: " << adjacent_nodes_on_boundary.size() << std::endl;
-                // }
                 std::vector<typename dcel_t::node_t*> on_boundary_pts;
             
 
                 for (auto pt_: pts){
-                    // if ((*cur_cell_it).id()==24){
-                    //     std::cout << "Point in pts: " << pt_->coords() << std::endl;
-                    // }
                     for (coords_t ad_node : adjacent_nodes_on_boundary){
-                        // if ((*cur_cell_it).id()==24){
-                        //     std::cout << "Point: " << pt_->coords() << std::endl;
-                        //     std::cout << "Adjacent node: " << ad_node << std::endl;
-                        // }
-                        if((ad_node(0) != centroid_x | ad_node(1) != centroid_y) & areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords())){
+                        if((*cur_cell_it).id()==422){
+                            std::cout << "Point in pts: " << pt_->coords() << std::endl;
+                            std::cout << "First condition: "<< (ad_node(0) != centroid_x | ad_node(1) != centroid_y) << std::endl;
+                            // std::cout << "Second condition: "<< areAligned(ad_node, pt_->coords(), centroid_it-> second -> coords()) << std::endl;
+                        }
+                        bool areAligned;
+                        auto areAligned_it_first = edge_vertexes2intersection.find(std::make_pair(ad_node, centroid_it-> second -> coords()));
+                        auto areAligned_it_second = edge_vertexes2intersection.find(std::make_pair(centroid_it-> second -> coords(), ad_node));
+                        if(areAligned_it_first != edge_vertexes2intersection.end()){
+                            areAligned = (edge_vertexes2intersection.at(std::make_pair(ad_node, centroid_it-> second -> coords())) == pt_->coords());
+                        }
+                        if(areAligned_it_first != edge_vertexes2intersection.end()){
+                            areAligned = (edge_vertexes2intersection.at(std::make_pair(centroid_it-> second -> coords(), ad_node)) == pt_->coords());
+                        }
+                        if((ad_node(0) != centroid_x || ad_node(1) != centroid_y) && areAligned){
                             on_boundary_pts.push_back(pt_);
                             break;
                         }
@@ -291,12 +294,14 @@ class Voronoi {
                 }
 
                 if (on_boundary_pts.size() < 2){
-                    std::cout << "ID of the cell: " << (*cur_cell_it).id() << std::endl;
-                    std::cout << "Size of on_boundary_pts: " << on_boundary_pts.size() << std::endl;
-                    std::cout << "Points found: " << std::endl;
-                    for (auto p : on_boundary_pts){
-                        std::cout << p->coords() << std::endl;
+                    if ((*cur_cell_it).id()==422){
+                        std::cout << "Size of on_boundary_pts: " << on_boundary_pts.size() << std::endl;
+                        std::cout << "Points found: " << std::endl;
+                        for (auto p : on_boundary_pts){
+                            std::cout << p->coords() << std::endl;
+                        }
                     }
+                    std::cout<<"Cell ID: "<<(*cur_cell_it).id()<<std::endl;
                     throw std::runtime_error("on_boundary_pts has size < 2");
                 }
                 
@@ -561,9 +566,6 @@ class Voronoi {
 
 
 
-
-
-
 //////////////////// NUOVA IMPLEMENTAZIONE //////////////////////////////
 
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
@@ -574,7 +576,8 @@ class Voronoi {
                                 int infty_id, std::vector<int>& node_ids_to_remove,
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords,
                                 std::map<int, int>& infty_halfedges_midpoints,
-                                std::map<int, typename simplex_t::NodeType>& midpoints_lookup){
+                                std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
+                                std::map<std::pair<coords_t, coords_t>, coords_t>& edge_vertexes2intersection){
 
         node_ids_to_remove.push_back(infty_id);
         for(int d_centroid_id : out_of_boundary_d_centroids){
@@ -592,9 +595,6 @@ class Voronoi {
         Eigen::Matrix<int, Dynamic, 1> node_ids = d_boundary_edge->node_ids();
         int d_vertex_id = node_ids(0);
         Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-        // if(cells_.find(d_vertex_id) == cells_.end()){
-        //     std::cout<<"row 582"<<std::endl;
-        // }
         typename dcel_t::cell_t v_cell = cells_.at(d_vertex_id);
 
         // Set counter for IDs
@@ -613,9 +613,6 @@ class Voronoi {
             // Get v_cell and d_vertex ID
             d_vertex_id = to_check_v_cells.front();
             d_vertex = mesh.node(d_vertex_id);
-            // if(cells_.find(d_vertex_id) == cells_.end()){
-            //     std::cout<<"row 606"<<std::endl;
-            // }
             v_cell = cells_.at(d_vertex_id); 
             to_check_v_cells.pop_front();
 
@@ -666,28 +663,16 @@ class Voronoi {
                     bool check_intersection = false;
                     typename simplex_t::NodeType intersection_point;
 
-                    // if(d_vertex_id == 24){
-                    //     std::cout << "Checking the following intersections: " << std::endl;
-                    //     std::cout << d_vertex << std::endl;
-                    //     std::cout << neigh_coords << std::endl;
-                    //     std::cout << "Coming from halfedge with ID: " << v_cell_halfedge->id() << std::endl;
-                    //     std::cout << he_p1 << std::endl;
-                    //     std::cout << he_p2 << std::endl;
-                    // }
-
                     // Check intersection
                     find_intersection_by_points(
                         d_vertex,
                         neigh_coords,
                         he_p1,
                         he_p2,
+                        edge_vertexes2intersection,
                         check_intersection,
                         intersection_point
                     );
-
-                    if (d_vertex_id == 163 || neigh_d_vertex_id == 163){
-                        std::cout << "Check intersection: " << check_intersection << std::endl;
-                    }
 
                     // Find ID of twin cell (most of the times it will coincide with neigh_d_vertex_id, but not always)
                     int twin_cell_id = v_cell_halfedge->twin()->cell()->id();
@@ -810,6 +795,7 @@ class Voronoi {
     Eigen::Matrix<double, 2, 1> p2,
     Eigen::Matrix<double, 2, 1> q1,
     Eigen::Matrix<double, 2, 1> q2,
+    std::map<std::pair<coords_t, coords_t>, coords_t>& edge_vertexes2intersection,
     bool& check_intersection,
     typename simplex_t::NodeType& intersection_point
     ){
@@ -849,6 +835,8 @@ class Voronoi {
             intersection_point(1) = p1(1) + t * dy1;
 
             check_intersection = true;
+            edge_vertexes2intersection[std::make_pair(p1, p2)] = intersection_point;
+            edge_vertexes2intersection[std::make_pair(p2, p1)] = intersection_point;
         }
     }
 
