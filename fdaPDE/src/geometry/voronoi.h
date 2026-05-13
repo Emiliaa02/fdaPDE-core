@@ -247,6 +247,14 @@ class Voronoi {
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts);
             // std::cout << "Computed center of mass" << std::endl;
 
+            // If pts has only size 2, insert centroid directly
+            bool only_two_pts = false;
+            if (pts.size()==2){
+                pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
+                typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                only_two_pts = true;
+            }
+
             // Put in counterclockwise order the points
             pts.sort([&](dcel_t::node_t* pa, dcel_t::node_t* pb)
                 {
@@ -261,66 +269,55 @@ class Voronoi {
             );
 
             // Check if the centroid has to be included into the polygon
-            auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id());
-            if(centroid_it != cell_centroid_coords.end()){
-                // double centroid_x = centroid_it-> second -> coords()(0);
-                // double centroid_y = centroid_it-> second -> coords()(1);
-                // std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
-                std::vector<int> adjacent_nodes_on_boundary = adjacent_points_map.at((*cur_cell_it).id());
-                std::vector<typename dcel_t::node_t*> on_boundary_pts;
-            
-
-                for (auto pt_: pts){
-                    for (int ad_node : adjacent_nodes_on_boundary){
-                        bool areAligned = false;
-                        auto areAligned_it = edge_vertexes2intersection.find(pt_->id());
-                        if(areAligned_it != edge_vertexes2intersection.end()){
-
-                            areAligned = (edge_vertexes2intersection.at(pt_->id()) == std::make_pair((*cur_cell_it).id(), ad_node)) 
-                                          || (edge_vertexes2intersection.at(pt_->id()) == std::make_pair(ad_node, (*cur_cell_it).id()));
-                        }
-                        if((*cur_cell_it).id()==193){
-                            std::cout << "Point in pts: " << pt_->coords() << std::endl;
-                            std::cout << "First condition: "<< (ad_node != (*cur_cell_it).id()) << std::endl;
-                            if(areAligned_it != edge_vertexes2intersection.end()){ std::cout<<"qui entra"<<std::endl;}
-                            std::cout << "Second condition: "<< areAligned << std::endl;
-                        }
-                        if((ad_node != (*cur_cell_it).id()) && areAligned){
-                            on_boundary_pts.push_back(pt_);
-                            break;
-                        }
-                    }
-                }
-
-                if (on_boundary_pts.size() < 2){
-                    if ((*cur_cell_it).id()==422){
-                        std::cout << "Size of on_boundary_pts: " << on_boundary_pts.size() << std::endl;
-                        std::cout << "Points found: " << std::endl;
-                        for (auto p : on_boundary_pts){
-                            std::cout << p->coords() << std::endl;
-                        }
-                    }
-                    std::cout<<"Cell ID: "<<(*cur_cell_it).id()<<std::endl;
-                    throw std::runtime_error("on_boundary_pts has size < 2");
-                }
+            if (!only_two_pts){
+                auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id());
+                if(centroid_it != cell_centroid_coords.end()){
+                    // double centroid_x = centroid_it-> second -> coords()(0);
+                    // double centroid_y = centroid_it-> second -> coords()(1);
+                    // std::pair<double, double> centroid_xy = std::make_pair(centroid_x, centroid_y);
+                    std::vector<int> adjacent_nodes_on_boundary = adjacent_points_map.at((*cur_cell_it).id());
+                    std::vector<typename dcel_t::node_t*> on_boundary_pts;
                 
-                auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);  // IL PROBLEMA E' CHE on_boundary_pts NON HA ELEMENTI
-                auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
 
-                if (std::distance(pts.begin(), first_position) >
-                    std::distance(pts.begin(), second_position))
-                {
-                    std::swap(first_position, second_position);
-                }
+                    for (auto pt_: pts){
+                        for (int ad_node : adjacent_nodes_on_boundary){
+                            bool areAligned = false;
+                            auto areAligned_it = edge_vertexes2intersection.find(pt_->id());
+                            if(areAligned_it != edge_vertexes2intersection.end()){
 
-                if (first_position != pts.end() && second_position != pts.end()){
-                    if(first_position == pts.begin() && second_position == std::prev(pts.end())){
-                        pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
-                        typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                                areAligned = (edge_vertexes2intersection.at(pt_->id()) == std::make_pair((*cur_cell_it).id(), ad_node)) 
+                                            || (edge_vertexes2intersection.at(pt_->id()) == std::make_pair(ad_node, (*cur_cell_it).id()));
+                            }
+                            if((ad_node != (*cur_cell_it).id()) && areAligned){
+                                on_boundary_pts.push_back(pt_);
+                                break;
+                            }
+                        }
                     }
-                    else{
-                        pts.insert(std::next(first_position), cell_centroid_coords.at((*cur_cell_it).id()));
-                        typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+
+                    if (on_boundary_pts.size() < 2){
+                        std::cout<<"Cell ID: "<<(*cur_cell_it).id()<<std::endl;
+                        throw std::runtime_error("on_boundary_pts has size < 2");
+                    }
+                    
+                    auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]);  // IL PROBLEMA E' CHE on_boundary_pts NON HA ELEMENTI
+                    auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]);
+
+                    if (std::distance(pts.begin(), first_position) >
+                        std::distance(pts.begin(), second_position))
+                    {
+                        std::swap(first_position, second_position);
+                    }
+
+                    if (first_position != pts.end() && second_position != pts.end()){
+                        if(first_position == pts.begin() && second_position == std::prev(pts.end())){
+                            pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
+                            typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                        }
+                        else{
+                            pts.insert(std::next(first_position), cell_centroid_coords.at((*cur_cell_it).id()));
+                            typename dcel_t::node_t* inserted_node = dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
+                        }
                     }
                 }
             }
@@ -335,6 +332,7 @@ class Voronoi {
             for(auto pt = pts.begin(); pt != pts.end(); ++pt){
                 // Next point
                 auto pt_next = std::next(pt);
+                
                 if(pt_next == pts.end()) {
                     pt_next = pts.begin();
                 }
@@ -648,25 +646,14 @@ class Voronoi {
                     if (v_cell_halfedge->node()->id()==infty_id){
                         he_p1 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id()));
                         he_p2 = v_cell_halfedge->twin()->node()->coords();
-                        if(d_vertex_id == 193){
-                            std::cout<<"halfedge starting from infty"<<std::endl;
-                            std::cout<<"he_p1: "<<he_p1<<std::endl;
-                            std::cout<<"he_p2: "<<he_p2<<std::endl;
-                        }
                     }
                     else if (v_cell_halfedge->twin()->node()->id()==infty_id){
                         he_p1 = v_cell_halfedge->node()->coords();
                         he_p2 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id()));
-                        if(d_vertex_id == 193){
-                            std::cout<<"halfedge to infty"<<std::endl;
-                        }
                     }
                     else{
                         he_p1 = v_cell_halfedge->node()->coords();
                         he_p2 = v_cell_halfedge->twin()->node()->coords();
-                        if(d_vertex_id == 193){
-                            std::cout<<"finite halfedge"<<std::endl;
-                        }
                     }
 
                     // Useful structures
@@ -683,12 +670,12 @@ class Voronoi {
                         intersection_point
                     );
 
-                    if(d_vertex_id == 193){
-                        std::cout<<"Intersection point: "<< intersection_point << std::endl;
-                    }
-
                     // Find ID of twin cell (most of the times it will coincide with neigh_d_vertex_id, but not always)
                     int twin_cell_id = v_cell_halfedge->twin()->cell()->id();
+
+                    if (d_vertex_id == 679) {std::cout << "Is d_vertex_id" << std::endl;}
+                    if (neigh_d_vertex_id == 679) {std::cout << "Is neigh_d_vertex_id" << std::endl;}
+                    if (twin_cell_id == 679) {std::cout << "Is twin_cell_id" << std::endl;}
 
                     // If you find hafedge-edge intersection, add it to v_cell supplementary_points and twin_v_cell supplementary points
                     if (check_intersection){
@@ -804,48 +791,98 @@ class Voronoi {
         return std::sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
     }
 
+    // void find_intersection_by_points(
+    // Eigen::Matrix<double, 2, 1> p1,
+    // Eigen::Matrix<double, 2, 1> p2,
+    // Eigen::Matrix<double, 2, 1> q1,
+    // Eigen::Matrix<double, 2, 1> q2,
+    // bool& check_intersection,
+    // typename simplex_t::NodeType& intersection_point
+    // ){
+
+    //     check_intersection = false;
+
+    //     constexpr double EPS = 1e-12;
+
+    //     // Compute differences
+    //     double dx1 = p2(0) - p1(0);
+    //     double dy1 = p2(1) - p1(1);
+
+    //     double dx2 = q2(0) - q1(0);
+    //     double dy2 = q2(1) - q1(1);
+
+    //     // Determinant
+    //     double det = dx1 * dy2 - dy1 * dx2;
+
+    //     // Parallel or nearly parallel
+    //     if (std::abs(det) < EPS)
+    //         return;
+
+    //     // Parameters
+    //     double t =
+    //         ((q1(0) - p1(0)) * dy2 -
+    //         (q1(1) - p1(1)) * dx2) / det;
+
+    //     double s =
+    //         ((q1(0) - p1(0)) * dy1 -
+    //         (q1(1) - p1(1)) * dx1) / det;
+
+    //     // Allow small numerical tolerance
+    //     if (t >= -EPS && t <= 1.0 + EPS &&
+    //         s >= -EPS && s <= 1.0 + EPS)
+    //     {
+    //         intersection_point(0) = p1(0) + t * dx1;
+    //         intersection_point(1) = p1(1) + t * dy1;
+
+    //         check_intersection = true;
+    //     }
+    // }
+
     void find_intersection_by_points(
-    Eigen::Matrix<double, 2, 1> p1,
-    Eigen::Matrix<double, 2, 1> p2,
-    Eigen::Matrix<double, 2, 1> q1,
-    Eigen::Matrix<double, 2, 1> q2,
+    const Eigen::Matrix<double, 2, 1>& p1,
+    const Eigen::Matrix<double, 2, 1>& p2,
+    const Eigen::Matrix<double, 2, 1>& q1,
+    const Eigen::Matrix<double, 2, 1>& q2,
     bool& check_intersection,
     typename simplex_t::NodeType& intersection_point
     ){
-
         check_intersection = false;
 
-        constexpr double EPS = 1e-12;
+        const double dx1 = p2(0) - p1(0);
+        const double dy1 = p2(1) - p1(1);
 
-        // Compute differences
-        double dx1 = p2(0) - p1(0);
-        double dy1 = p2(1) - p1(1);
+        const double dx2 = q2(0) - q1(0);
+        const double dy2 = q2(1) - q1(1);
 
-        double dx2 = q2(0) - q1(0);
-        double dy2 = q2(1) - q1(1);
+        const double det = dx1 * dy2 - dy1 * dx2;
 
-        // Determinant
-        double det = dx1 * dy2 - dy1 * dx2;
+        // scala geometrica del problema
+        const double len1 = std::sqrt(dx1*dx1 + dy1*dy1);
+        const double len2 = std::sqrt(dx2*dx2 + dy2*dy2);
 
-        // Parallel or nearly parallel
-        if (std::abs(det) < EPS)
+        const double EPS = 1e-10;
+        const double tol = EPS * len1 * len2;
+
+        // segmenti quasi paralleli
+        if (std::abs(det) <= tol) {
             return;
+        }
 
-        // Parameters
-        double t =
-            ((q1(0) - p1(0)) * dy2 -
-            (q1(1) - p1(1)) * dx2) / det;
+        const double rx = q1(0) - p1(0);
+        const double ry = q1(1) - p1(1);
 
-        double s =
-            ((q1(0) - p1(0)) * dy1 -
-            (q1(1) - p1(1)) * dx1) / det;
+        const double t = (rx * dy2 - ry * dx2) / det;
+        const double s = (rx * dy1 - ry * dx1) / det;
 
-        // Allow small numerical tolerance
-        if (t >= -EPS && t <= 1.0 + EPS &&
-            s >= -EPS && s <= 1.0 + EPS)
+        const double param_tol = 1e-9;
+
+        if (t >= -param_tol && t <= 1.0 + param_tol &&
+            s >= -param_tol && s <= 1.0 + param_tol)
         {
-            intersection_point(0) = p1(0) + t * dx1;
-            intersection_point(1) = p1(1) + t * dy1;
+            double tt = std::clamp(t, 0.0, 1.0);
+
+            intersection_point(0) = p1(0) + tt * dx1;
+            intersection_point(1) = p1(1) + tt * dy1;
 
             check_intersection = true;
         }

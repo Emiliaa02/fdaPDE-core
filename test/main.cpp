@@ -78,7 +78,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/north_italy/points.csv", "data/mesh/north_italy/elements.csv", "data/mesh/north_italy/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
@@ -105,7 +105,12 @@ int i = 0;
 float sum=0;
 int unbdd=0;
 for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+
   // std::cout << "Cell: " << it->id() << std::endl;
+  // if (it->id()==207){
+  //   std::cout << it->halfedge()->id() << std::endl;
+  //   std::cout << it->halfedge()->next()->id() << std::endl;
+  // }
 
 	auto measure = it->measure();
   // std::cout << "Computed measure" << std::endl;
@@ -126,7 +131,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/north_italy.json");
+voronoi_obj.export_to_json("plots/data/brain.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
