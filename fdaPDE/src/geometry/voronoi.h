@@ -636,6 +636,58 @@ class Voronoi {
                 // Loop over v_halfedges connected to that v_centroid
                 for (typename dcel_t::halfedge_t* v_cell_halfedge : v_cell_halfedges){
 
+                    if (
+                        d_vertex_id == 679 ||
+                        d_vertex_id == 432 ||
+                        d_vertex_id == 1559 ||
+                        d_vertex_id == 2843 ||
+                        d_vertex_id == 2926 ||
+                        d_vertex_id == 3395 ||
+                        d_vertex_id == 1023 ||
+                        d_vertex_id == 1061 ||
+                        d_vertex_id == 905 ||
+                        d_vertex_id == 1387 ||
+                        d_vertex_id == 1591 ||
+                        d_vertex_id == 3438 ||
+                        d_vertex_id == 5164
+                    ){
+                        std::cout << "Found d_vertex_id: " << d_vertex_id << std::endl;
+                    }
+                    if (
+                        neigh_d_vertex_id == 679 ||
+                        neigh_d_vertex_id == 432 ||
+                        neigh_d_vertex_id == 1559 ||
+                        neigh_d_vertex_id == 2843 ||
+                        neigh_d_vertex_id == 2926 ||
+                        neigh_d_vertex_id == 3395 ||
+                        neigh_d_vertex_id == 1023 ||
+                        neigh_d_vertex_id == 1061 ||
+                        neigh_d_vertex_id == 905 ||
+                        neigh_d_vertex_id == 1387 ||
+                        neigh_d_vertex_id == 1591 ||
+                        neigh_d_vertex_id == 3438 ||
+                        neigh_d_vertex_id == 5164
+                    ){
+                        std::cout << "Found neigh_d_vertex_id: " << neigh_d_vertex_id << std::endl;
+                    }
+                    // if (
+                    //     twin_cell_id == 679 ||
+                    //     twin_cell_id == 432 ||
+                    //     twin_cell_id == 1559 ||
+                    //     twin_cell_id == 2843 ||
+                    //     twin_cell_id == 2926 ||
+                    //     twin_cell_id == 3395 ||
+                    //     twin_cell_id == 1023 ||
+                    //     twin_cell_id == 1061 ||
+                    //     twin_cell_id == 905 ||
+                    //     twin_cell_id == 1387 ||
+                    //     twin_cell_id == 1591 ||
+                    //     twin_cell_id == 3438 ||
+                    //     twin_cell_id == 5164
+                    // ){
+                    //     std::cout << "Found twin_cell_id: " << twin_cell_id << std::endl;
+                    // }
+
                     // If the triple (v_centroid, neigh_d_vertex, v_halfedge) is already present, skip
                     if(already_checked.find(std::make_tuple(d_vertex_id, neigh_d_vertex_id, v_cell_halfedge->id())) != already_checked.end()){
                         continue;
@@ -670,12 +722,15 @@ class Voronoi {
                         intersection_point
                     );
 
+                    if (v_cell_halfedge->twin()->id()==102){
+                        std::cout << "Halfedge 102" << std::endl;
+                    }
+                    if (v_cell_halfedge->twin()->id()==103){
+                        std::cout << "Halfedge 103" << std::endl;
+                    }
+
                     // Find ID of twin cell (most of the times it will coincide with neigh_d_vertex_id, but not always)
                     int twin_cell_id = v_cell_halfedge->twin()->cell()->id();
-
-                    if (d_vertex_id == 679) {std::cout << "Is d_vertex_id" << std::endl;}
-                    if (neigh_d_vertex_id == 679) {std::cout << "Is neigh_d_vertex_id" << std::endl;}
-                    if (twin_cell_id == 679) {std::cout << "Is twin_cell_id" << std::endl;}
 
                     // If you find hafedge-edge intersection, add it to v_cell supplementary_points and twin_v_cell supplementary points
                     if (check_intersection){

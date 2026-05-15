@@ -70,6 +70,7 @@
 #include <limits>
 #include <chrono>
 #include <cmath>
+#include <exception>
 using namespace fdapde;
 // using json = nlohmann::json;
 
@@ -101,34 +102,53 @@ int n_cells = voronoi_obj.n_cells();
 std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
 
 // fate operazioni...
-int i = 0;
-float sum=0;
-int unbdd=0;
-for(auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it) {
+// int i = 0;
+// float sum=0;
+// int unbdd=0;
+// for (auto it = voronoi_obj.cells_begin();
+//      it != voronoi_obj.cells_end();
+//      ++it)
+// {
+//     if (it->is_unbounded()) {
+//         unbdd++;
+//         continue;
+//     }
 
-  // std::cout << "Cell: " << it->id() << std::endl;
-  // if (it->id()==207){
-  //   std::cout << it->halfedge()->id() << std::endl;
-  //   std::cout << it->halfedge()->next()->id() << std::endl;
-  // }
+//     // Optional additional checks
+//     // if (it->cell_nodes().size() == 0) {
+//     //     std::cout << "Empty cell has ID: " << it->id() << std::endl;;
+//     //     continue;
+//     // }
 
-	auto measure = it->measure();
-  // std::cout << "Computed measure" << std::endl;
+//     auto measure = it->measure();
 
-  if (measure != std::numeric_limits<double>::infinity()) {
-	sum+=measure;  
-  i += 1;
-//   std::cout << "Measure of cell with ID " << it->id() << ": " << measure << std::endl;
-}
-  if(it->is_unbounded()){
+//     if (std::isfinite(measure)) {
+//         sum += measure;
+//         i++;
+//     }
 
-    unbdd+=1;
-  }
-}
+//     if (it->id() == 679 ||
+//         it->id() == 432 ||
+//         it->id() == 1559 ||
+//         it->id() == 2843 ||
+//         it->id() == 2926 ||
+//         it->id() == 3395 ||
+//         it->id() == 1023 ||
+//         it->id() == 1061 ||
+//         it->id() == 905 ||
+//         it->id() == 1387 ||
+//         it->id() == 1591 ||
+//         it->id() == 3438 ||
+//         it->id() == 5164
+//   ){
+//     std::cout << "Cell ID: " << it->id() << std::endl;
+//     std::cout << "Cetroid: " << mesh.node(it->id()) << std::endl;
+//   }
+// }
 
-std::cout << "Printed area of " << i << " cells" << std::endl;
-std::cout << "Area " << sum <<std::endl;
-std::cout << "Unbounded " << unbdd << std::endl;
+// std::cout << "Printed area of " << i << " cells" << std::endl;
+// std::cout << "Area " << sum <<std::endl;
+// std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
 voronoi_obj.export_to_json("plots/data/brain.json");
