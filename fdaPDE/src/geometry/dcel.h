@@ -684,19 +684,19 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
     }
    
-    
-node_t* find_node_by_coords(const coords_t& coords) {
-    auto it = std::find_if(nodes_.begin(), nodes_.end(),
-        [&](node_t& node) {
-            return node.coords() == coords;
-        });
+        
+    node_t* find_node_by_coords(const coords_t& coords) {
+        auto it = std::find_if(nodes_.begin(), nodes_.end(),
+            [&](node_t& node) {
+                return node.coords() == coords;
+            });
 
-    if (it != nodes_.end()) {
-        return &(*it); 
+        if (it != nodes_.end()) {
+            return &(*it); 
+        }
+
+        return nullptr;
     }
-
-    return nullptr;
-}
 
     // function to add a polygon to a DCEL; if buidling_dcel is true, it means the DCEL is being built from scratch (i.e. in from_triangulation)
     halfedge_t* add_polygon(halfedge_t* v, const std::vector<node_t*>& nodes, bool building_dcel=false){
