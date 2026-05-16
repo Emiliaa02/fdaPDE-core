@@ -17,6 +17,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     using cell_t = dcel_t::cell_t;
     using voronoi_t = Voronoi<local_dim, embed_dim>;
     using coords_t = Eigen::Matrix<double, 1, embed_dim>;
+    using node_t = dcel_t::node_t;
     
     public:
 
@@ -25,6 +26,41 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                     this->midpoints_lookup, this->infty_halfedges_midpoints);
         std::cout << "\nFinished constructor" << std::endl;
     }
+
+    // Function to check if a point lies in a cell
+    const bool is_point_in_cell(const coords_t& point, 
+                        int cell_id){
+        
+        // Retrieve cell
+        auto cell = this->dcel_.cells_begin();
+
+        // Compute its points
+        std::vector<node_t*> cell_nodes_vector = cell->cell_nodes();
+
+        // Collect them inside a proper matrix
+        Eigen::Matrix<double, Dynamic, embed_dim> cell_nodes(cell_nodes_vector.size(), 2);
+        for (int i=0; i < cell_nodes_vector.size(); ++i){
+            cell_nodes.row(i) = cell_nodes_vector[i]->coords();
+        }
+
+        // Check condition
+        return internals::point_in_2d_polygon(cell_nodes, point);
+    }
+
+    // Find Voronoi centroid closest to a given point
+    // TODO: in DCEL non c'è info sui centroidi (ex vertici della mesh), ma ti servono per fare questo
+    const int find_closest_v_centroid(const coords_t& point){
+        int min_id = 0;
+
+        for (auto this->dcel_.)
+    }
+
+    // const bool function_to_test(){
+
+    //     auto n = std::prev(this->dcel_.nodes_end());
+
+    //     return is_point_in_cell(*n, 0);
+    // }
 
 
     private:

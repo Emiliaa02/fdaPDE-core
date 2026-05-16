@@ -129,6 +129,8 @@ std::cout << "Exporting..." << std::endl;
 voronoi_obj.export_to_json("plots/data/brain.json");
 std::cout << "Finished exporting" << std::endl;
 
+std::cout << "Found point inside " << voronoi_obj.function_to_test() << std::endl;
+
 return 0;
 }
 
