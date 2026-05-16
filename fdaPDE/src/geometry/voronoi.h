@@ -426,14 +426,17 @@ class Voronoi {
             bool found_boundary_edge = false;
             auto d_boundary_edge = mesh.boundary_edges_begin(); 
             for(auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_end(); ++delaunay_edge){
-                if(boundary.find(delaunay_edge->id()) != boundary.end()){
+                int first_node_id = delaunay_edge->node_ids()(0);
+                // int second_node_id = delaunay_edge->node_ids()(1);
+                if(boundary.find(first_node_id) != boundary.end()){
                     d_boundary_edge = delaunay_edge;
                     found_boundary_edge = true;
                     break;
                 }
             }
             if(!found_boundary_edge){
-                std::cerr << "Mesh does not contain this boundary..." << std::endl;
+                // std::cerr << "Mesh does not contain this boundary..." << std::endl;
+                throw("Mesh does not contain this boundary...");
             }
 
             // Consider one of its two endpoints, and the corresponding v_cell
@@ -523,31 +526,6 @@ class Voronoi {
 
                         // Find ID of twin cell (most of the times it will coincide with neigh_d_vertex_id, but not always)
                         int twin_cell_id = v_cell_halfedge->twin()->cell()->id();
-                        // if (
-                        //     d_vertex_id == 1559 ||
-                        //     d_vertex_id == 3395 ||
-                        //     d_vertex_id == 1387 ||
-                        //     d_vertex_id == 5164
-                    
-                        // ){
-                        //     std::cout << "Found d_vertex_id: " << d_vertex_id << std::endl;
-                        // }
-                        // if (
-                        //     neigh_d_vertex_id == 1559 ||
-                        //     neigh_d_vertex_id == 3395 ||
-                        //     neigh_d_vertex_id == 1387 ||
-                        //     neigh_d_vertex_id == 5164
-                        // ){
-                        //     std::cout << "Found neigh_d_vertex_id: " << neigh_d_vertex_id << std::endl;
-                        // }
-                        // if (
-                        //     twin_cell_id == 1559 ||
-                        //     twin_cell_id == 3395 ||
-                        //     twin_cell_id = 1387 ||
-                        //     twin_cell_id == 5164
-                        // ){
-                        //     std::cout << "Found twin_cell_id: " << twin_cell_id << std::endl;
-                        // }
 
                         // If you find hafedge-edge intersection, add it to v_cell supplementary_points and twin_v_cell supplementary points
                         if (check_intersection){

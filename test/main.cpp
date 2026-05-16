@@ -79,7 +79,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
@@ -105,26 +105,39 @@ std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and "
 int i = 0;
 float sum=0;
 int unbdd=0;
-for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
-    if (it->is_unbounded()) {
-        unbdd++;
-        continue;
-    }
 
-    // Optional additional checks
-	if (it->cell_nodes().size() != 0) {
-		std::cout<<"Cell ID: "<<it->id()<<std::endl;
-        if(mesh.is_node_on_boundary(it->id())){
-			auto nodes = it->cell_nodes();
-			for(auto pt_: nodes){
-				std::cout<<pt_->coords()<<std::endl;
-			}
-		}
-    }
-    // if (it->cell_nodes().size() == 0) {
-    //     std::cout << "Empty cell has ID: " << it->id() << std::endl;;
+// for (int neigh_id : mesh.node_one_ring(333)){
+//     std::cout << "333: " << std::endl;
+//     std::cout << neigh_id << " which has coords: " << mesh.node(neigh_id) << "\n" << std::endl; 
+// }
+for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
+    // if (it->is_unbounded()) {
+    //     unbdd++;
     //     continue;
     // }
+
+    // Optional additional checks
+	// if (it->id() == 337 || it->id()==338) {
+	// 	std::cout<<"Cell ID: "<<it->id()<<std::endl;
+    //     if(mesh.is_node_on_boundary(it->id())){
+	// 		auto nodes = it->cell_nodes();
+	// 		for(auto pt_: nodes){
+	// 			std::cout<<pt_->coords()<<std::endl;
+	// 		}
+	// 	}
+    // }
+
+    if (it->cell_nodes().size() == 0) {
+        // std::cout << "Empty cell has ID: " << it->id() << std::endl;
+        // std::cout << "Its coords: " << mesh.node(it->id()) << std::endl;
+
+        // std::cout << "Result of node_one_ring:" << std::endl;
+
+        // for (int neigh_id : mesh.node_one_ring(it->id())){
+        //     std::cout << neigh_id << " which has coords: " << mesh.node(neigh_id) << "\n" << std::endl; 
+        // }
+        continue;
+    }
 	
 //  if (it->id() == 1559 ||
 // 	it->id() == 3395 ||
@@ -147,7 +160,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/brain.json");
+voronoi_obj.export_to_json("plots/data/unit_square_16.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
