@@ -41,6 +41,8 @@ class Voronoi {
     std::set<int> not_created_cells;
     // Resize d_centroid2v_vertex
     d_centroid2v_vertex.resize(n_mesh_faces);
+    // Resize v_cell2v_centroid
+    v_cell2v_centroid.resize(n_mesh_vertices);
     
     std::vector<std::vector<int>> node_neighbors_lookup = v_vertex_computation_(mesh, 
                                                                                 dcel_, 
@@ -545,6 +547,9 @@ class Voronoi {
                     // Create the new cell
                     cell_t curr_cell(idx);
 
+                    // Store v_cell - v_centroid information
+                    v_cell2v_centroid[idx] = d_vertex;  // O(1)
+
                     // create segments around the vertex
                     typename simplex_t::NodeType u = v_vertex - d_vertex;
                     typename simplex_t::NodeType v = neigh_v_vertex - d_vertex;
@@ -693,6 +698,8 @@ class Voronoi {
                 // cells_.push_back(curr_cell);
                 cells_[curr_cell.id()] = curr_cell;
                 dcel_.insert_cell(curr_cell);
+                // Store v_cell - v_centroid information
+                v_cell2v_centroid[curr_cell.id()] = mesh.node(curr_cell.id());
             }
         }
     }
@@ -742,6 +749,8 @@ class Voronoi {
     std::map<int, typename simplex_t::NodeType>  midpoints_lookup;
     // Map to store infinity halfedge -> midpoint ID (for understanding infinity edges intersections)
     std::map<int, int> infty_halfedges_midpoints;
+    // Map associating to each v_cell the corresponding v_centroid
+    std::vector<typename simplex_t::NodeType> v_cell2v_centroid;
 
 };
 

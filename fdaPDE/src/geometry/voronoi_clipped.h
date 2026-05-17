@@ -33,6 +33,12 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         
         // Retrieve cell
         auto cell = this->dcel_.cells_begin();
+        for (auto cell_it = this->dcel_.cells_begin(); cell_it != this->dcel_.cells_end(); ++cell_it){
+            if (cell_it->id()==cell_id){
+                cell = cell_it;
+                break;
+            }
+        }
 
         // Compute its points
         std::vector<node_t*> cell_nodes_vector = cell->cell_nodes();
@@ -48,19 +54,93 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
     // Find Voronoi centroid closest to a given point
-    // TODO: in DCEL non c'è info sui centroidi (ex vertici della mesh), ma ti servono per fare questo
     const int find_closest_v_centroid(const coords_t& point){
+        // Closest v_centroid
         int min_id = 0;
+        double min_distance = std::numeric_limits<double>::max();
 
-        for (auto this->dcel_.)
+        // Point coordinates
+        double x_point = point(0);
+        double y_point = point(1);
+
+        for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
+            // Store data
+            typename simplex_t::NodeType v_centroid = this->v_cell2v_centroid[v_cell_id];
+
+            // Centroid coordinates
+            double x_centroid = v_centroid(0);
+            double y_centroid = v_centroid(1);
+
+            // Compute differences
+            double dx = x_point - x_centroid;
+            double dy = y_point - y_centroid;
+
+            // Compute distance
+            double distance = std::sqrt(dx * dx + dy * dy);
+
+            // Check if it "beats the one before"
+            if (distance < min_distance){
+                min_distance = distance;
+                min_id = v_cell_id;
+            }
+        }
+        return min_id;
     }
 
-    // const bool function_to_test(){
+    // Check if Voronoi definition holds for single point
+    const bool check_definition_on_single_point(const coords_t& point){
 
-    //     auto n = std::prev(this->dcel_.nodes_end());
+        // Find its closest v_centroid
+        int closest_v_centroid = find_closest_v_centroid(point);
 
-    //     return is_point_in_cell(*n, 0);
-    // }
+        // Check that point is within associated v_cell
+        bool def_holds = is_point_in_cell(point, closest_v_centroid);
+
+        // If definition does not hold, display node
+        if (!def_holds){
+            std::cerr << "Point does not satisfy definition of Voronoi: " << point  << ". Cell ID: " << 
+            closest_v_centroid << " corresponding centroid: " << this->v_cell2v_centroid[closest_v_centroid] << std::endl;
+        }
+
+        return def_holds;
+    }
+
+    const int function_to_test(){
+
+        std::vector<coords_t> vector_of_points;
+        vector_of_points.reserve(1000 * 1000);
+
+        int nx = 1000;
+        int ny = 1000;
+
+        double x_min = -2.0, x_max = 2.0;
+        double y_min = -2.0,  y_max = 2.0;
+
+        double dx = (x_max - x_min) / (nx - 1);
+        double dy = (y_max - y_min) / (ny - 1);
+
+        for (int i = 0; i < nx; ++i) {
+            double x = x_min + i * dx;
+
+            for (int j = 0; j < ny; ++j) {
+                double y = y_min + j * dy;
+
+                coords_t p;
+                p(0) = x;
+                p(1) = y;
+
+                vector_of_points.push_back(p);
+            }
+        }
+
+        int n_correct_ones = 0;
+
+        for (auto point : vector_of_points){
+            n_correct_ones += check_definition_on_single_point(point);
+        }
+
+        return n_correct_ones;
+    }
 
 
     private:

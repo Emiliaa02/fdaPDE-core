@@ -80,7 +80,7 @@ using namespace fdapde;
 int main() {
 
 // caricate mesh dall'esterno
-Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/quasi_circle/points.csv", "data/mesh/quasi_circle/elements.csv", "data/mesh/quasi_circle/boundary.csv", true, true);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
@@ -126,11 +126,12 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/brain.json");
+voronoi_obj.export_to_json("plots/data/quasi_circle.json");
 std::cout << "Finished exporting" << std::endl;
 
-std::cout << "Found point inside " << voronoi_obj.function_to_test() << std::endl;
+int output = voronoi_obj.function_to_test();
+
+std::cout << "How many points satisfy the definition?  " << output << std::endl;
 
 return 0;
 }
-
