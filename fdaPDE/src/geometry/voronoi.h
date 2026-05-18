@@ -31,8 +31,6 @@ class Voronoi {
     std::vector<bool> visited_centroids(n_mesh_faces+1, false);
     // counter to set the IDs
     int counter = 0;
-    // Same centroids lookup
-    std::vector<int> first_id_lookup(n_mesh_faces);
     // Lookup for midpoints coordinates
     std::map<int, typename simplex_t::NodeType> midpoints_lookup_raw;
     int cur_id = 0;
@@ -98,6 +96,7 @@ class Voronoi {
 
     }
 
+
     // iterators
     using cell_iterator = std::list<cell_t>::iterator;
     using const_cell_iterator = std::list<cell_t>::const_iterator;
@@ -132,22 +131,16 @@ class Voronoi {
     }
 
 
-    protected:
-    dcel_t dcel_;
-
+    private:
     // Internal function for computing v_vertex neighbours
     std::vector<int> compute_neighbours_(const Triangulation<local_dim, embed_dim>& mesh,
-        const triangle_t& d_simplex, 
-        std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
-        int& cur_midpoint_id,
-        bool print){
+        const triangle_t& d_simplex, std::map<int, typename simplex_t::NodeType>& midpoints_lookup_raw,
+        int& cur_midpoint_id, bool print){
                                         
         // Get neighbours
         Eigen::Matrix<int, Eigen::Dynamic, 1> neigh = d_simplex.neighbors();
-
         // Store them inside a vector
         std::vector<int> neigh_vec(neigh.data(), neigh.data() + neigh.size());
-
         // Midpoint IDs
         std::vector<int> mp_ids;
 
@@ -156,16 +149,12 @@ class Voronoi {
 
                 // If edge on boundary ...
                 if (d_simplex_edge -> on_boundary()){
-
                     // ... compute midpoint ...
                     auto mp = d_simplex_edge -> compute_midpoint();
-
                     // ... and create a new midpoint index
                     midpoints_lookup_raw[cur_midpoint_id] = mp;
-
                     // update midpoint id to edge map id
                     midpoint_to_edge_[cur_midpoint_id] = d_simplex_edge->id();
-
                     // Retrieve centroid
                     auto centroid_ = d_simplex.circumcenter();
 
@@ -178,7 +167,6 @@ class Voronoi {
 
                     // Loop over d_vertexes of this d_simplex
                     for(auto d_simplex_vertex_id : d_simplex_vertexes_ids){
-
                         // Vertex coords
                         auto d_simplex_vertex_coords = mesh.node(d_simplex_vertex_id);
 
@@ -198,7 +186,6 @@ class Voronoi {
 
                     // Compute scalar product
                     float sp = v0(0)*v1(0) + v0(1)*v1(1);
-
                     // If scalar product negative, angle is > 90 -> change midpoint position
                     if(sp < 0){
                         mp(0) = 2*centroid_(0) - mp(0);
@@ -210,7 +197,6 @@ class Voronoi {
 
                     // Add in the added midpoint ids
                     mp_ids.push_back(cur_midpoint_id);
-
                     cur_midpoint_id -= 1;
                 }
             }
@@ -227,7 +213,6 @@ class Voronoi {
         }
 
         return neigh_vec;
-
     }
 
     // Retrieve v_vertex corresponding to d_centroid, if present
@@ -324,14 +309,12 @@ class Voronoi {
         }
 
         return v_vertex_neighbours_lookup;
-
     }
 
     int retrieve_v_vertex_id_(int d_centroid_id){
 
         // If positive, than it is a physical d_centroid
         if (d_centroid_id >= 0) return (this->d_centroid2v_vertex[d_centroid_id]);
-
         // Else it is a midpoint
         return d_centroid_id;
     }
@@ -731,8 +714,11 @@ class Voronoi {
         }
     }   
 
-    // List of cells
-    // std::list<typename dcel_t::cell_t> cells_;
+
+    protected:
+    // DCEL data structure
+    dcel_t dcel_;
+    // Cells
     std::map<int, typename dcel_t::cell_t> cells_;
     // Midpoint id to egde id
     std::map<int, int> midpoint_to_edge_;
