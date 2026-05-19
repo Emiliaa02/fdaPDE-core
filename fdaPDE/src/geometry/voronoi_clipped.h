@@ -25,7 +25,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     VoronoiClipped(const Triangulation<local_dim, embed_dim>& mesh) : Voronoi<LocalDim, EmbedDim>(mesh){
         clip_voronoi(mesh, this->infty_id, this->out_of_boundary_d_centroids, this->d_centroid2v_vertex, this->vertexes2halfedge,
                     this->midpoints_lookup, this->infty_halfedges_midpoints);
-        std::cout << "\nFinished constructor" << std::endl;
+        std::cout << "\nFinished Voronoi clipped constructor" << std::endl;
     }
 
     // Check if Voronoi definition holds for single point
@@ -117,9 +117,9 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                 infty_id, node_ids_to_remove, cell_centroid_coords, infty_halfedges_midpoints,
                                 midpoints_lookup, edge_vertexes2intersection);
 
+
         // Loop over cells of the DCEL structure
         for (auto cur_cell_it = this->dcel_.cells_begin(); cur_cell_it != this->dcel_.cells_end(); cur_cell_it++){
-            // std::cout << "Begin for on cells" << std::endl;
             if(on_boundary.find((*cur_cell_it).id()) == on_boundary.end()){ continue; };
             typename dcel_t::halfedge_t* start = nullptr;
             typename dcel_t::halfedge_t* cur_halfedge = nullptr;
@@ -327,12 +327,11 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         for(std::set<int> boundary: boundaries){
             // Find the boundary_edge_iterator corrensponding to the first ID of the current component
             typename triangulation_t::boundary_edge_iterator d_boundary_edge = find_boundary_edge(mesh, boundary);
-
             // Consider one of its two endpoints, and the corresponding v_cell
             Eigen::Matrix<int, Dynamic, 1> node_ids = d_boundary_edge->node_ids();
             int d_vertex_id = node_ids(0);
             Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-            typename dcel_t::cell_t v_cell = this->cells_.at(d_vertex_id);
+            typename dcel_t::cell_t* v_cell = this->cells_[d_vertex_id];
 
             // Cells queue
             std::list<int> to_check_v_cells;
@@ -344,6 +343,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                 // Propagate towards the boundary to fill the supplementary points structure
                 propagate_boundary_intersections(mesh, to_check_v_cells, already_checked,  infty_halfedges_midpoints, supplementary_points, 
                                                 midpoints_lookup, on_boundary, edge_vertexes2intersection, infty_id, counter);
+
             }
         }
         // If the cell centroid is at the boundary and is not already present as a node in the DCEL, add it and set that it as a boundary node
@@ -405,12 +405,11 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         // Get v_cell and d_vertex ID
         int d_vertex_id = to_check_v_cells.front();
         Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-        typename dcel_t::cell_t v_cell = this->cells_.at(d_vertex_id); 
+        typename dcel_t::cell_t* v_cell = this->cells_[d_vertex_id]; 
         to_check_v_cells.pop_front();
 
         // Neighbouring d_vertexes
         std::vector<int> neigh_d_vertexes_ids =  mesh.node_one_ring(d_vertex_id);
-
         // Loop over d_edges connected to that d_vertex
         for (int neigh_d_vertex_id : neigh_d_vertexes_ids){
             bool skippa = true;
@@ -424,9 +423,8 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             if (skippa){
                 continue;
             }
-
             coords_t neigh_coords = mesh.node(neigh_d_vertex_id);
-            std::vector<typename dcel_t::halfedge_t*> v_cell_halfedges =  v_cell.cell_edges();
+            std::vector<typename dcel_t::halfedge_t*> v_cell_halfedges =  v_cell->cell_edges();
             bool intersected_once = false;
             // Loop over v_halfedges connected to that v_centroid
             for (typename dcel_t::halfedge_t* v_cell_halfedge : v_cell_halfedges){
@@ -612,13 +610,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     const bool is_point_in_cell(const coords_t& point, int cell_id){
         
         // Retrieve cell
-        auto cell = this->dcel_.cells_begin();
-        for (auto cell_it = this->dcel_.cells_begin(); cell_it != this->dcel_.cells_end(); ++cell_it){
-            if (cell_it->id()==cell_id){
-                cell = cell_it;
-                break;
-            }
-        }
+        auto cell = this->cells_[cell_id];
 
         // Compute its points
         std::vector<node_t*> cell_nodes_vector = cell->cell_nodes();

@@ -108,6 +108,7 @@ float sum=0;
 int unbdd=0;
 
 for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
+    // std::cout<<"Cell ID: "<<it->id()<<std::endl;
     if (it->is_unbounded()) {
         unbdd++;
         continue;

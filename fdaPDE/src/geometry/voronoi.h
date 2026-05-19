@@ -41,6 +41,8 @@ class Voronoi {
     d_centroid2v_vertex.resize(n_mesh_faces);
     // Resize v_cell2v_centroid
     v_cell2v_centroid.resize(n_mesh_vertices);
+    // Resize cells_
+    cells_.resize(n_mesh_vertices, nullptr);
     
     std::vector<std::vector<int>> node_neighbors_lookup = v_vertex_computation_(mesh, 
                                                                                 dcel_, 
@@ -92,7 +94,10 @@ class Voronoi {
     // Update halfedges-cells structure in DCEL
     this->dcel_.update_halfedges_with_cells();
 
-    std::cout << "\nFinished constructor" << std::endl;
+    // Fill the vector of cells
+    fill_vector_of_cells();
+
+    std::cout << "\nFinished Voronoi constructor" << std::endl;
 
     }
 
@@ -546,13 +551,12 @@ class Voronoi {
                     }
 
                     // Add the new cell to the list if it is not yet added 
-                    // if(std::find(cells_.begin(), cells_.end(), curr_cell) == cells_.end())
-                    if (cells_.find(curr_cell.id()) == cells_.end()){  // O(logN)
+                    if(std::find(dcel_.cells_begin(), dcel_.cells_end(), curr_cell) == dcel_.cells_end()){
+                    // if (cells_[curr_cell.id()] == -1){  // O(logN)
                         if(cross < -1e-9){
                             // cross product < tolerance means that neigh_centroid is clock-wise with respect to centroid, so we want neigh -> centroid
                             curr_cell.set_halfedge(current_twin_halfedge);
-                            // cells_.push_back(curr_cell);
-                            cells_[curr_cell.id()] = curr_cell;
+                            // cells_[curr_cell.id()] = curr_cell;
                             dcel_.insert_cell(curr_cell);
                             // not_created_cells.remove(idx);
                             not_created_cells.erase(idx);
@@ -560,8 +564,7 @@ class Voronoi {
                         else if(cross > 1e-9){
                             // cross product > tolerance means that neigh_centroid is CCW with respect to centroid, so we want centroid -> neigh
                             curr_cell.set_halfedge(current_cell_halfedge);
-                            // cells_.push_back(curr_cell);
-                            cells_[curr_cell.id()] = curr_cell;
+                            // cells_[curr_cell.id()] = curr_cell;
                             dcel_.insert_cell(curr_cell);
                             // not_created_cells.remove(idx);
                             not_created_cells.erase(idx);
@@ -592,8 +595,8 @@ class Voronoi {
 
     if(count_neigh_tria == 1){
         cell_t curr_cell_diff(diff_id);
-        // if (std::find(cells_.begin(), cells_.end(), curr_cell_diff) == cells_.end())
-        if (cells_.find(curr_cell_diff.id()) == cells_.end()){  // O(N)
+        if(std::find(dcel_.cells_begin(), dcel_.cells_end(), curr_cell_diff.id()) == dcel_.cells_end()){
+        // if (cells_[curr_cell_diff.id()] == -1){  // O(N)
             not_created_cells.insert(diff_id);
         }
     }
@@ -630,8 +633,8 @@ class Voronoi {
 
             for(int internal_id : not_created_cells){
                 cell_t curr_cell(internal_id);
-                // if (std::find(cells_.begin(), cells_.end(), curr_cell) != cells_.end())
-                if (cells_.find(curr_cell.id()) != cells_.end()){
+                if(std::find(dcel_.cells_begin(), dcel_.cells_end(), curr_cell.id()) != dcel_.cells_end()){
+                // if (cells_[curr_cell.id()] != -1){
                     continue;
                 }
                 if (mesh.is_node_on_boundary(internal_id)){
@@ -679,7 +682,7 @@ class Voronoi {
                 }
 
                 // cells_.push_back(curr_cell);
-                cells_[curr_cell.id()] = curr_cell;
+                // cells_[curr_cell.id()] = curr_cell;
                 dcel_.insert_cell(curr_cell);
                 // Store v_cell - v_centroid information
                 v_cell2v_centroid[curr_cell.id()] = mesh.node(curr_cell.id());
@@ -714,12 +717,18 @@ class Voronoi {
         }
     }   
 
+    void fill_vector_of_cells(){
+        for(auto it = dcel_.cells_begin(); it != dcel_.cells_end(); ++it){
+            cells_[it->id()] = &(*it);
+        }
+    }
+
 
     protected:
     // DCEL data structure
     dcel_t dcel_;
-    // Cells
-    std::map<int, typename dcel_t::cell_t> cells_;
+    // Vector of cells
+    std::vector<typename dcel_t::cell_t*> cells_;
     // Midpoint id to egde id
     std::map<int, int> midpoint_to_edge_;
     // Intersection d_edges
