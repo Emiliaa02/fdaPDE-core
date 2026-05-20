@@ -1050,10 +1050,10 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
     }
 
-    void update_halfedges_with_cells(){
+    void update_halfedges_with_cells(){ // --> O(N)
 
         // Loop over cells
-        for (cell_iterator cur_cell = cells_begin(); cur_cell != cells_end(); cur_cell++){
+        for (cell_iterator cur_cell = cells_begin(); cur_cell != cells_end(); cur_cell++){ // O(N)
 
             // Loop over cell halfedgesù
             halfedge_t* start = cur_cell->halfedge();
@@ -1063,7 +1063,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             start->set_cell(&(*cur_cell));
 
             // Loop over halfedges 
-            while(start != cur_halfedge){
+            while(start != cur_halfedge){ // O(1)
                 // Update halfedge' s cell
                 cur_halfedge->set_cell(&(*cur_cell));
                 cur_halfedge = cur_halfedge->next();
