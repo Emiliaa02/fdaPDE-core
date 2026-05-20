@@ -80,15 +80,17 @@ using namespace fdapde;
 int main() {
 
 // Load a mesh
-Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_128/points.csv", "data/mesh/unit_square_128/elements.csv", "data/mesh/unit_square_128/boundary.csv", true, true);
+
+// auto mesh = Triangulation<2, 2>::UnitSquare(256);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
-// auto start = std::chrono::high_resolution_clock::now();
+auto start = std::chrono::high_resolution_clock::now();
 VoronoiClipped<2, 2> voronoi_obj(mesh);
-// auto end = std::chrono::high_resolution_clock::now();
-// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-// std::cout << "Computational time: " << duration.count() << " us\n";
+auto end = std::chrono::high_resolution_clock::now();
+auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+std::cout << "Computational time: " << duration.count() << " us\n";
 
 std::cout << "Asking for nodes" << std::endl;
 int n_nodes = voronoi_obj.n_nodes();
@@ -127,7 +129,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/brain.json");
+voronoi_obj.export_to_json("plots/data/unit_square_128.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;

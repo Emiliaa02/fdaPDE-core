@@ -57,7 +57,7 @@ class Voronoi {
     centroid_lookup[this->infty_id] = v_vertex_infty;
     typename dcel_t::node_t* infty_node = dcel_.insert_node(typename dcel_t::node_t(this->infty_id, false, v_vertex_infty));
 
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     // Imagine to have the correspondence cell_id: centroid coordinates
     for(auto it = mesh.cells_begin(); it != mesh.cells_end(); ++it) {  // O(N)
 
@@ -82,9 +82,9 @@ class Voronoi {
         create_cells_(dcel_, mesh, cell_id, old_cell_id, 
                     centroid_lookup, neighbor_simplexes,  not_created_cells);  // O(N)
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    std::cout<<"computational times: "<< duration.count() << std::endl;
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // std::cout<<"computational times: "<< duration.count() << std::endl;
     // Add to the DCEL structure the not created cells
     add_not_created_cells_(not_created_cells, mesh);
 
