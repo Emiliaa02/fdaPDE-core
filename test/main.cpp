@@ -80,7 +80,7 @@ using namespace fdapde;
 int main() {
 
 // Load a mesh
-Triangulation<2, 2> mesh("data/mesh/unit_square_128/points.csv", "data/mesh/unit_square_128/elements.csv", "data/mesh/unit_square_128/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_32/points.csv", "data/mesh/unit_square_32/elements.csv", "data/mesh/unit_square_32/boundary.csv", true, true);
 
 // auto mesh = Triangulation<2, 2>::UnitSquare(256);
 
@@ -129,7 +129,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/unit_square_128.json");
+voronoi_obj.export_to_json("plots/data/unit_square_32.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
