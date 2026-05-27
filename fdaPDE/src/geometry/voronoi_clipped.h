@@ -110,7 +110,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         std::map<int, std::vector<int>> adjacent_points_map = adjacent_points(mesh); // ?
         std::map<int, typename dcel_t::node_t*> cell_centroid_coords;
         std::set<int> on_boundary;
-        std::vector<int> node_ids_to_remove;
+        std::set<int> node_ids_to_remove;
         std::map<int, std::pair<int, int>> edge_vertexes2intersection;
         
         boundary_cells_detection(mesh, supplementary_points, on_boundary,
@@ -131,7 +131,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             // Get nodes
             std::vector<typename dcel_t::node_t*> nodes = cur_cell_it -> cell_nodes(); // O(1)
             for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){ // O(1)
-                auto to_exclude_it = std::find(node_ids_to_remove.begin(), node_ids_to_remove.end(), (*cell_node)->id()); // O(N)
+                auto to_exclude_it = node_ids_to_remove.find((*cell_node)->id());  // O(log N)
                 if(to_exclude_it == node_ids_to_remove.end()){
                     pts.push_back(*cell_node); // O(1)
                 }
@@ -301,17 +301,17 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                 std::set<int>& on_boundary,
                                 std::set<int>& out_of_boundary_d_centroids,
                                 std::vector<int>& d_centroid2v_vertex,
-                                int infty_id, std::vector<int>& node_ids_to_remove,
+                                int infty_id, std::set<int>& node_ids_to_remove,
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords,
                                 std::map<int, int>& infty_halfedges_midpoints,
                                 std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                                 std::map<int, std::pair<int, int>>& edge_vertexes2intersection){
 
         // Fill the structure containing the node ids to remove during the clipping (i.e. the infinity node and the ones out of the boundary)
-        node_ids_to_remove.push_back(infty_id); // O(N)
+        node_ids_to_remove.insert(infty_id); // O(log N)
         for(int d_centroid_id : out_of_boundary_d_centroids){ // O(N)
             int v_vertex_id = d_centroid2v_vertex.at(d_centroid_id); // O(1)
-            node_ids_to_remove.push_back(v_vertex_id); // O(N)
+            node_ids_to_remove.insert(v_vertex_id); // O(logN)
         }
 
         if (mesh.boundary_edges_begin() == mesh.boundary_edges_end()){
@@ -327,12 +327,12 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
         for(std::set<int> boundary: boundaries){ // O(BUCHI)
             // Find the boundary_edge_iterator corrensponding to the first ID of the current component
-            typename triangulation_t::boundary_edge_iterator d_boundary_edge = find_boundary_edge(mesh, boundary); // ?
+            typename triangulation_t::boundary_edge_iterator d_boundary_edge = find_boundary_edge(mesh, boundary); // O(N* logN)
             // Consider one of its two endpoints, and the corresponding v_cell
             Eigen::Matrix<int, Dynamic, 1> node_ids = d_boundary_edge->node_ids();
             int d_vertex_id = node_ids(0);
             Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-            typename dcel_t::cell_t* v_cell = this->cells_[d_vertex_id]; // O(1)
+            typename dcel_t::cell_t* v_cell = this->cells_map[d_vertex_id]; // O(1)
 
             // Cells queue
             std::list<int> to_check_v_cells;
@@ -381,10 +381,10 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
         bool found_boundary_edge = false;
         auto d_boundary_edge = mesh.boundary_edges_begin(); 
-        for(auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_end(); ++delaunay_edge){
-            int first_node_id = delaunay_edge->node_ids()(0);
+        for(auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_end(); ++delaunay_edge){ O(N)
+            int first_node_id = delaunay_edge->node_ids()(0); 
             // int second_node_id = delaunay_edge->node_ids()(1);
-            if(boundary.find(first_node_id) != boundary.end()){
+            if(boundary.find(first_node_id) != boundary.end()){ //O(log N)
                 d_boundary_edge = delaunay_edge;
                 found_boundary_edge = true;
                 break;
@@ -406,7 +406,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         // Get v_cell and d_vertex ID
         int d_vertex_id = to_check_v_cells.front();
         Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-        typename dcel_t::cell_t* v_cell = this->cells_[d_vertex_id]; 
+        typename dcel_t::cell_t* v_cell = this->cells_map[d_vertex_id]; 
         to_check_v_cells.pop_front();
 
         // Neighbouring d_vertexes
@@ -611,7 +611,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     const bool is_point_in_cell(const coords_t& point, int cell_id){
         
         // Retrieve cell
-        auto cell = this->cells_[cell_id];
+        auto cell = this->cells_map[cell_id];
 
         // Compute its points
         std::vector<node_t*> cell_nodes_vector = cell->cell_nodes();

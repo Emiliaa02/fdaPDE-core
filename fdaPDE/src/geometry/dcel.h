@@ -613,7 +613,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
         return h1;
     }
 
-    void remove_nodes(std::vector<int> nodes_ids){
+    void remove_nodes(std::set<int> nodes_ids){
 
         for (int node_id : nodes_ids){
             // Find node in nodes_
@@ -621,6 +621,10 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 [node_id](const node_t& p) {
                     return p.id() == node_id;
                 });
+
+            if (node_it == nodes_.end()) {
+                continue;
+            }
 
             // Remove halfedge from its structure
             node_it->set_halfedge(nullptr);
@@ -635,7 +639,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 });
 
                 // Remove from the neighbour's halfedge_lookup_ the halfedge neigh->node_to_remove
-                neigh_node_it->remove_halfedge(node_id);
+                if (neigh_node_it != nodes_.end()){
+                    neigh_node_it->remove_halfedge(node_id);
+                }
             }
             // Halfedges to remove
             std::vector<halfedge_t*> halfedges_to_remove;

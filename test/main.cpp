@@ -80,17 +80,17 @@ using namespace fdapde;
 int main() {
 
 // Load a mesh
-Triangulation<2, 2> mesh("data/mesh/unit_square_32/points.csv", "data/mesh/unit_square_32/elements.csv", "data/mesh/unit_square_32/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
 
 // auto mesh = Triangulation<2, 2>::UnitSquare(256);
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
-auto start = std::chrono::high_resolution_clock::now();
+// auto start = std::chrono::high_resolution_clock::now();
 VoronoiClipped<2, 2> voronoi_obj(mesh);
-auto end = std::chrono::high_resolution_clock::now();
-auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-std::cout << "Computational time: " << duration.count() << " us\n";
+// auto end = std::chrono::high_resolution_clock::now();
+// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+// std::cout << "Computational time: " << duration.count() << " us\n";
 
 std::cout << "Asking for nodes" << std::endl;
 int n_nodes = voronoi_obj.n_nodes();
@@ -110,7 +110,6 @@ float sum=0;
 int unbdd=0;
 
 for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
-    // std::cout<<"Cell ID: "<<it->id()<<std::endl;
     if (it->is_unbounded()) {
         unbdd++;
         continue;
@@ -129,7 +128,7 @@ std::cout << "Area " << sum <<std::endl;
 std::cout << "Unbounded " << unbdd << std::endl;
 
 std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/unit_square_32.json");
+voronoi_obj.export_to_json("plots/data/brain.json");
 std::cout << "Finished exporting" << std::endl;
 
 return 0;
