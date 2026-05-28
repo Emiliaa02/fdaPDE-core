@@ -613,14 +613,14 @@ template <int LocalDim, int EmbedDim> class DCEL {
         return h1;
     }
 
-    void remove_nodes(std::set<int> nodes_ids){
+    void remove_nodes(std::set<int> nodes_ids){ // -> O(N^2)
 
-        for (int node_id : nodes_ids){
+        for (int node_id : nodes_ids){ // O(N)
             // Find node in nodes_
             auto node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [node_id](const node_t& p) {
                     return p.id() == node_id;
-                });
+                });  // O(N)
 
             if (node_it == nodes_.end()) {
                 continue;
@@ -636,7 +636,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 auto neigh_node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [neigh_node_id](const node_t& p) {
                     return p.id() == neigh_node_id;
-                });
+                }); // O(N)
 
                 // Remove from the neighbour's halfedge_lookup_ the halfedge neigh->node_to_remove
                 if (neigh_node_it != nodes_.end()){
@@ -646,14 +646,14 @@ template <int LocalDim, int EmbedDim> class DCEL {
             // Halfedges to remove
             std::vector<halfedge_t*> halfedges_to_remove;
             
-            for (auto it = halfedges_.begin(); it != halfedges_.end(); ++it){
+            for (auto it = halfedges_.begin(); it != halfedges_.end(); ++it){ // O(N)
                 if (it->node()->id() != node_id){
                     continue;
                 }
-                halfedges_to_remove.push_back(&(*it));
+                halfedges_to_remove.push_back(&(*it)); // O(N) (maybe jou can allocate beforehand)
             }
 
-            for(halfedge_t* h: halfedges_to_remove){
+            for(halfedge_t* h: halfedges_to_remove){ // O(K<<N)
 
                 int neigh = h->twin()->node()->id();
 
@@ -676,17 +676,17 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
                 halfedges_.remove_if([twin_id](const halfedge_t& he) {
                     return he.id() == twin_id;
-                });
+                }); // O(N)
                 halfedges_.remove_if([h_id](const halfedge_t& he) {
                     return he.id() == h_id;
                 });
             }
         }
         // Loop over points and remove them
-        for (int node_id : nodes_ids){
-            nodes_.remove_if([node_id](const node_t& n) {
+        for (int node_id : nodes_ids){  // O(N)
+            nodes_.remove_if([node_id](const node_t& n) {  
                     return n.id() == node_id;
-                });
+                });  // O(N)
         }
     }
    

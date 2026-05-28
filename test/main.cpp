@@ -65,6 +65,7 @@
 #include <fdaPDE/geometry.h>
 #include <fdaPDE/src/geometry/voronoi.h>
 #include <fdaPDE/src/geometry/voronoi_clipped.h>
+#include <fdaPDE/src/geometry/dcel.h>
 #include <fdaPDE/src/geometry/delaunay.h>
 #include <fdaPDE/src/geometry/triangulation.h>
 #include <json.hpp>
@@ -82,7 +83,13 @@ int main() {
 // Load a mesh
 Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
 
-// auto mesh = Triangulation<2, 2>::UnitSquare(256);
+// auto mesh = Triangulation<2, 2>::Square(0.0, 2.0, 256);
+// DCEL<2,2> triang_dcel;
+// std::cout << "Here 1 " << std::endl;
+// std::vector<Eigen::Matrix<double, Eigen::Dynamic, 2>> holes;
+// triang_dcel.from_triangulation(mesh, holes);
+// std::cout << "Here 2 " << std::endl;
+// triang_dcel.export_to_json("data/mesh/square_2_dcel.json");
 
 std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
