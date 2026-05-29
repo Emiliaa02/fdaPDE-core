@@ -22,10 +22,10 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     public:
 
     // Constructor for the Clipped Voronoi structure
-    VoronoiClipped(const Triangulation<local_dim, embed_dim>& mesh) : Voronoi<LocalDim, EmbedDim>(mesh){
+    VoronoiClipped(const Triangulation<local_dim, embed_dim>& mesh) : Voronoi<LocalDim, EmbedDim>(mesh){  // --> O(N^2)
         // Voronoi constructor O(N^2)
         clip_voronoi(mesh, this->infty_id, this->out_of_boundary_d_centroids, this->d_centroid2v_vertex, this->vertexes2halfedge,
-                    this->midpoints_lookup, this->infty_halfedges_midpoints);
+                    this->midpoints_lookup, this->infty_halfedges_midpoints);  // O(N^2)
         std::cout << "\nFinished Voronoi clipped constructor" << std::endl;
     }
 
@@ -107,7 +107,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                       std::map<int, int>& infty_halfedges_midpoints){
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
-        std::map<int, std::vector<int>> adjacent_points_map = adjacent_points(mesh); // ?
+        std::map<int, std::vector<int>> adjacent_points_map = adjacent_points(mesh); // O(N*logN) (A dire il vero O(sqrt(N) * log(sqrt(N))))
         std::map<int, typename dcel_t::node_t*> cell_centroid_coords;
         std::set<int> on_boundary;
         std::set<int> node_ids_to_remove;
@@ -116,7 +116,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         boundary_cells_detection(mesh, supplementary_points, on_boundary,
                                 out_of_boundary_d_centroids, d_centroid2v_vertex,
                                 infty_id, node_ids_to_remove, cell_centroid_coords, infty_halfedges_midpoints,
-                                midpoints_lookup, edge_vertexes2intersection); // ?
+                                midpoints_lookup, edge_vertexes2intersection); // O(N^2)
 
 
         // Loop over cells of the DCEL structure
@@ -291,8 +291,8 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         cur_cell_it->clipped();
         }
 
-    // Remove the nodes outside the domain and the corrensponding halfedges
-    this->dcel_.remove_nodes(node_ids_to_remove); // O(N^2)
+        // Remove the nodes outside the domain and the corrensponding halfedges
+        this->dcel_.remove_nodes(node_ids_to_remove); // O(N)
     }   
 
 
@@ -305,11 +305,11 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords,
                                 std::map<int, int>& infty_halfedges_midpoints,
                                 std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
-                                std::map<int, std::pair<int, int>>& edge_vertexes2intersection){
+                                std::map<int, std::pair<int, int>>& edge_vertexes2intersection){ // --> O(N^2)
 
         // Fill the structure containing the node ids to remove during the clipping (i.e. the infinity node and the ones out of the boundary)
         node_ids_to_remove.insert(infty_id); // O(log N)
-        for(int d_centroid_id : out_of_boundary_d_centroids){ // O(N)
+        for(int d_centroid_id : out_of_boundary_d_centroids){ // O(1)
             int v_vertex_id = d_centroid2v_vertex.at(d_centroid_id); // O(1)
             node_ids_to_remove.insert(v_vertex_id); // O(logN)
         }
@@ -343,7 +343,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             while (to_check_v_cells.size() > 0){
                 // Propagate towards the boundary to fill the supplementary points structure
                 propagate_boundary_intersections(mesh, to_check_v_cells, already_checked,  infty_halfedges_midpoints, supplementary_points, 
-                                                midpoints_lookup, on_boundary, edge_vertexes2intersection, infty_id, counter); // ?
+                                                midpoints_lookup, on_boundary, edge_vertexes2intersection, infty_id, counter); // O(logN)
 
             }
         }
@@ -359,7 +359,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             int cur_cell_id = cell_it -> id();
             auto cur_centroid_coords = mesh.node(cur_cell_id);
             typename dcel_t::node_t* new_centroid_node;
-            typename dcel_t::node_t* centroid_node = this->dcel_.find_node_by_coords(cur_centroid_coords); // O(N) HERE WE CAN AVOID
+            typename dcel_t::node_t* centroid_node = this->dcel_.find_node_by_coords(cur_centroid_coords); // O(N)  - BOTTLENECK
             if(centroid_node == nullptr){
                 new_centroid_node = new typename dcel_t::node_t();
                 new_centroid_node->set_coords(cur_centroid_coords);
@@ -402,19 +402,19 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                         std::set<std::tuple<int, int, int>>& already_checked,  std::map<int, int>& infty_halfedges_midpoints,
                                         std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points, 
                                         std::map<int, typename simplex_t::NodeType>& midpoints_lookup, std::set<int>& on_boundary, 
-                                        std::map<int, std::pair<int, int>>& edge_vertexes2intersection, int infty_id, int& counter){
+                                        std::map<int, std::pair<int, int>>& edge_vertexes2intersection, int infty_id, int& counter){  // --> O(logN)
         // Get v_cell and d_vertex ID
         int d_vertex_id = to_check_v_cells.front();
-        Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-        typename dcel_t::cell_t* v_cell = this->cells_map[d_vertex_id]; 
+        Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id); // O(1)
+        typename dcel_t::cell_t* v_cell = this->cells_map[d_vertex_id];  // O(logN)
         to_check_v_cells.pop_front();
 
         // Neighbouring d_vertexes
-        std::vector<int> neigh_d_vertexes_ids =  mesh.node_one_ring(d_vertex_id);
+        std::vector<int> neigh_d_vertexes_ids =  mesh.node_one_ring(d_vertex_id);  // O(1)
         // Loop over d_edges connected to that d_vertex
-        for (int neigh_d_vertex_id : neigh_d_vertexes_ids){
+        for (int neigh_d_vertex_id : neigh_d_vertexes_ids){  // O(1)
             bool skippa = true;
-            for (auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_end(); ++delaunay_edge){
+            for (auto delaunay_edge = mesh.boundary_edges_begin(); delaunay_edge != mesh.boundary_edges_end(); ++delaunay_edge){  // O(BoundaryEdges) (sqrt(N) average)
                 bool condition_to_not_skip =  (delaunay_edge->node_ids()(0) == d_vertex_id && delaunay_edge->node_ids()(1) == neigh_d_vertex_id) ||
                     (delaunay_edge->node_ids()(1) == d_vertex_id && delaunay_edge->node_ids()(0) == neigh_d_vertex_id);
                 if(condition_to_not_skip){
@@ -425,25 +425,25 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                 continue;
             }
             coords_t neigh_coords = mesh.node(neigh_d_vertex_id);
-            std::vector<typename dcel_t::halfedge_t*> v_cell_halfedges =  v_cell->cell_edges();
+            std::vector<typename dcel_t::halfedge_t*> v_cell_halfedges =  v_cell->cell_edges();  // O(1)
             bool intersected_once = false;
             // Loop over v_halfedges connected to that v_centroid
-            for (typename dcel_t::halfedge_t* v_cell_halfedge : v_cell_halfedges){
+            for (typename dcel_t::halfedge_t* v_cell_halfedge : v_cell_halfedges){  // O(1)
 
                 // If the triple (v_centroid, neigh_d_vertex, v_halfedge) is already present, skip
-                if(already_checked.find(std::make_tuple(d_vertex_id, neigh_d_vertex_id, v_cell_halfedge->id())) != already_checked.end()){
+                if(already_checked.find(std::make_tuple(d_vertex_id, neigh_d_vertex_id, v_cell_halfedge->id())) != already_checked.end()){ // O(logN)
                     continue;
                 }
 
                 // Find halfedge points
                 coords_t he_p1, he_p2;
                 if (v_cell_halfedge->node()->id()==infty_id){
-                    he_p1 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id()));
+                    he_p1 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id())); // O(logN)
                     he_p2 = v_cell_halfedge->twin()->node()->coords();
                 }
                 else if (v_cell_halfedge->twin()->node()->id()==infty_id){
                     he_p1 = v_cell_halfedge->node()->coords();
-                    he_p2 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id()));
+                    he_p2 = midpoints_lookup.at(infty_halfedges_midpoints.at(v_cell_halfedge->id()));  // O(logN)
                 }
                 else{
                     he_p1 = v_cell_halfedge->node()->coords();
@@ -462,7 +462,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                     he_p2,
                     check_intersection,
                     intersection_point
-                );
+                );  // O(1)
 
                 // Find ID of twin cell (most of the times it will coincide with neigh_d_vertex_id, but not always)
                 int twin_cell_id = v_cell_halfedge->twin()->cell()->id();
@@ -470,11 +470,11 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                 // If you find hafedge-edge intersection, add it to v_cell supplementary_points and twin_v_cell supplementary points
                 if (check_intersection){
 
-                    on_boundary.insert(d_vertex_id);
-                    on_boundary.insert(neigh_d_vertex_id);
-                    on_boundary.insert(twin_cell_id);
+                    on_boundary.insert(d_vertex_id); // O(logN)
+                    on_boundary.insert(neigh_d_vertex_id); // O(logN)
+                    on_boundary.insert(twin_cell_id); // O(logN)
                     typename dcel_t::node_t* v_intersection_point;
-                    auto intersection_ptr =  this->dcel_.find_node_by_coords(intersection_point);
+                    auto intersection_ptr =  this->dcel_.find_node_by_coords(intersection_point);  // O(N)
                     if(intersection_ptr==nullptr){
                         v_intersection_point = new typename dcel_t::node_t();
                         v_intersection_point->set_coords(intersection_point);
@@ -483,26 +483,26 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                     else{
                         v_intersection_point = intersection_ptr;
                     }
-                    if(supplementary_points.find(d_vertex_id) == supplementary_points.end()){
+                    if(supplementary_points.find(d_vertex_id) == supplementary_points.end()){ // O(logN)
                         supplementary_points[d_vertex_id];
                     }
-                    if(supplementary_points.find(twin_cell_id) == supplementary_points.end()){
+                    if(supplementary_points.find(twin_cell_id) == supplementary_points.end()){  // O(logN)
                         supplementary_points[twin_cell_id];
                     }
-                    supplementary_points[d_vertex_id].push_back(v_intersection_point);
-                    supplementary_points[twin_cell_id].push_back(v_intersection_point);
-                    this->nodes_map[v_intersection_point->id()] = v_intersection_point;
+                    supplementary_points[d_vertex_id].push_back(v_intersection_point);  // O(logN)
+                    supplementary_points[twin_cell_id].push_back(v_intersection_point);  // O(logN)
+                    this->nodes_map[v_intersection_point->id()] = v_intersection_point;  // O(logN)
                     v_intersection_point->set_boundary(true);
                     intersected_once = true;
 
-                    to_check_v_cells.push_back(twin_cell_id);
-                    to_check_v_cells.push_back(neigh_d_vertex_id);
-                    edge_vertexes2intersection[v_intersection_point->id()] = std::make_pair(d_vertex_id, neigh_d_vertex_id);
+                    to_check_v_cells.push_back(twin_cell_id); // O(1)
+                    to_check_v_cells.push_back(neigh_d_vertex_id);  // O(1)
+                    edge_vertexes2intersection[v_intersection_point->id()] = std::make_pair(d_vertex_id, neigh_d_vertex_id);  // O(logN)
                 }
 
                 // Add to already_checked the triple (v_centroid, neigh_d_vertex, v_halfedge) and corresponding triple for the neighbouring v_cell
-                already_checked.insert({d_vertex_id, neigh_d_vertex_id, v_cell_halfedge->id()});
-                already_checked.insert({neigh_d_vertex_id, d_vertex_id, v_cell_halfedge->twin()->id()});
+                already_checked.insert({d_vertex_id, neigh_d_vertex_id, v_cell_halfedge->id()});  // O(logN)
+                already_checked.insert({neigh_d_vertex_id, d_vertex_id, v_cell_halfedge->twin()->id()});  // O(logN)
             }
         }
     }
@@ -528,7 +528,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                     const Eigen::Matrix<double, 2, 1>& q1,
                                     const Eigen::Matrix<double, 2, 1>& q2,
                                     bool& check_intersection,
-                                    typename simplex_t::NodeType& intersection_point){
+                                    typename simplex_t::NodeType& intersection_point){  // --> O(1)
         check_intersection = false;
 
         const double dx1 = p2(0) - p1(0);
@@ -572,12 +572,12 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
 
-    std::map<int, std::vector<int>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){
+    std::map<int, std::vector<int>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){  // --> O(N*logN) (A dire il vero O(sqrt(N) * log(sqrt(N))))
 
         std::map<int, std::vector<int>> adjacent_points_map;
         
         // Loop over boundary edges
-        for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){
+        for (auto d_boundary_edge = mesh.boundary_edges_begin(); d_boundary_edge != mesh.boundary_edges_end(); ++d_boundary_edge){  // O(sqrt(N))
 
             // Define first and second endpoints
             Eigen::Matrix<int, Dynamic, 1> endpoints_matrix = d_boundary_edge -> node_ids();
@@ -585,22 +585,22 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             int second_endpoint_id = endpoints_matrix(1);
 
             // If first endpoint already in map, add second endpoint
-            if(adjacent_points_map.find(first_endpoint_id) != adjacent_points_map.end()){
-                adjacent_points_map[first_endpoint_id].push_back(second_endpoint_id);
+            if(adjacent_points_map.find(first_endpoint_id) != adjacent_points_map.end()){  // O(logN)
+                adjacent_points_map[first_endpoint_id].push_back(second_endpoint_id);  // O(logN)
             }
             // Else, create its entry and add second endpoint
             else{
-                adjacent_points_map[first_endpoint_id];
-                adjacent_points_map[first_endpoint_id].push_back(second_endpoint_id);
+                adjacent_points_map[first_endpoint_id];  // O(logN)
+                adjacent_points_map[first_endpoint_id].push_back(second_endpoint_id);  // O(logN)
             }
 
             // Repeat for second endpoint
-            if(adjacent_points_map.find(second_endpoint_id) != adjacent_points_map.end()){
-                adjacent_points_map[second_endpoint_id].push_back(first_endpoint_id);
+            if(adjacent_points_map.find(second_endpoint_id) != adjacent_points_map.end()){  // O(logN)
+                adjacent_points_map[second_endpoint_id].push_back(first_endpoint_id);  // O(logN)
             }
             else{
-                adjacent_points_map[second_endpoint_id];
-                adjacent_points_map[second_endpoint_id].push_back(first_endpoint_id);
+                adjacent_points_map[second_endpoint_id];  // O(logN)
+                adjacent_points_map[second_endpoint_id].push_back(first_endpoint_id);  // O(logN)
             }
         }
 
@@ -632,34 +632,86 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     const int find_closest_v_centroid(const coords_t& point){
         // Closest v_centroid
         int min_id = 0;
-        double min_distance = std::numeric_limits<double>::max();
 
         // Point coordinates
         double x_point = point(0);
         double y_point = point(1);
 
-        for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
-            // Store data
-            typename simplex_t::NodeType v_centroid = this->v_cell2v_centroid[v_cell_id];
+        // Prohibited centroids
+        std::set<int> prohibited_v_centroids;
 
-            // Centroid coordinates
-            double x_centroid = v_centroid(0);
-            double y_centroid = v_centroid(1);
+        // // Loop over all cells
+        // for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
+        //     typename simplex_t::NodeType v_centroid = this->v_cell2v_centroid[v_cell_id];
+        //     // Loop over halfedges
+        //     for (auto halfedge = this->dcel_.halfedges_begin(); halfedge != this->dcel_.halfedges_end(); ++halfedge){
+        //         // Verify if there is intersection
+        //         Eigen::Matrix<double, 2, 1> p1 = v_centroid;
+        //         Eigen::Matrix<double, 2, 1> p2 = point;
+        //         Eigen::Matrix<double, 2, 1> q1 = halfedge->node()->coords();
+        //         Eigen::Matrix<double, 2, 1> q2 = halfedge->next()->node()->coords();
+        //         bool check_intersection = false;
+        //         typename simplex_t::NodeType intersection_point;
+        //         find_intersection_by_points(p1, p2, q1, q2, check_intersection, intersection_point);
+        //         if (check_intersection && intersection_point != v_centroid){
+        //             prohibited_v_centroids.insert(v_cell_id);
+        //             break;
+        //         }
+        //     }
+        // }
 
-            // Compute differences
-            double dx = x_point - x_centroid;
-            double dy = y_point - y_centroid;
+        while(true){
+            double min_distance = std::numeric_limits<double>::max();
+            for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
+                if(prohibited_v_centroids.find(v_cell_id) != prohibited_v_centroids.end()){
+                    continue;
+                }
+                // Store data
+                typename simplex_t::NodeType v_centroid = this->v_cell2v_centroid[v_cell_id];
 
-            // Compute distance
-            double distance = std::sqrt(dx * dx + dy * dy);
+                // Centroid coordinates
+                double x_centroid = v_centroid(0);
+                double y_centroid = v_centroid(1);
 
-            // Check if it "beats the one before"
-            if (distance < min_distance){
-                min_distance = distance;
-                min_id = v_cell_id;
+                // Compute differences
+                double dx = x_point - x_centroid;
+                double dy = y_point - y_centroid;
+
+                // Compute distance
+                double distance = std::sqrt(dx * dx + dy * dy);
+
+                // Check if it "beats the one before"
+                if (distance < min_distance){
+                    min_distance = distance;
+                    min_id = v_cell_id;
+                }
+            }
+
+            // Loop over halfedges
+            bool found_one = false;
+            for (auto halfedge = this->dcel_.halfedges_begin(); halfedge != this->dcel_.halfedges_end(); ++halfedge){
+                if (!(halfedge->on_boundary())) continue;
+                // Verify if there is intersection
+                Eigen::Matrix<double, 2, 1> p1 = this->v_cell2v_centroid[min_id];
+                Eigen::Matrix<double, 2, 1> p2 = point;
+                Eigen::Matrix<double, 2, 1> q1 = halfedge->node()->coords();
+                Eigen::Matrix<double, 2, 1> q2 = halfedge->next()->node()->coords();
+                bool check_intersection = false;
+                typename simplex_t::NodeType intersection_point;
+                find_intersection_by_points(p1, p2, q1, q2, check_intersection, intersection_point);
+                if (check_intersection && intersection_point != p1){
+                    std::cout << "Maleeeee" << std::endl;
+                    prohibited_v_centroids.insert(min_id);
+                    found_one = true;
+                    break;
+                }
+            }
+            if (!found_one){
+                std::cout << "Beneeeee" << std::endl;
+                return min_id;
             }
         }
-        return min_id;
+        std::cerr << "Did not find any valid v_centroid" << std::endl;
     }
 
 

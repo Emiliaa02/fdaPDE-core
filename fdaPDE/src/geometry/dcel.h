@@ -145,7 +145,10 @@ template <int LocalDim, int EmbedDim> class DCEL {
         node_t* node() const { return node_; }
         cell_t* cell() const { return cell_; }
         int id() const { return id_; }
-        bool on_boundary() const { return (node_->on_boundary() && twin_->node()->on_boundary() && (cell()==nullptr || twin()->cell()==nullptr)); }
+        bool on_boundary() const { 
+            if (node_->on_boundary() && twin_==nullptr) return true;
+            return (node_->on_boundary() && twin_->node()->on_boundary() && (cell()==nullptr || twin()->cell()==nullptr)); 
+        }
         std::list<halfedge_t>::iterator it() const { return it_; }
         bool is_segment() const { return segment_; }
         // modifiers
@@ -613,9 +616,9 @@ template <int LocalDim, int EmbedDim> class DCEL {
         return h1;
     }
 
-    void remove_nodes(std::set<int> nodes_ids){ // -> O(N^2)
+    void remove_nodes(std::set<int> nodes_ids){ // -> O(N^2) (on average O(1))
 
-        for (int node_id : nodes_ids){ // O(N)
+        for (int node_id : nodes_ids){ // O(N) (but on average much less: you do not remove all nodes)
             // Find node in nodes_
             auto node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [node_id](const node_t& p) {
