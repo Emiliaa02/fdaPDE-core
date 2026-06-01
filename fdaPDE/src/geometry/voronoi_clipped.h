@@ -142,13 +142,13 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             auto check_supp_pt = supplementary_points.find(cur_cell_it->id()); // O(logN)
             if (check_supp_pt != supplementary_points.end()){
                 // Insert supplementary points in DCEL structure, if they are not yet included 
-                for(typename dcel_t::node_t* supp_pt : check_supp_pt->second){ // O(1)
-                    auto node_ptr = this->nodes_map.at(supp_pt->id()); // O(logN)
-                    if(node_ptr == nullptr){
+                for(typename dcel_t::node_t* supp_pt : check_supp_pt->second){ // O(1)                    
+                    auto node_ptr = this->nodes_map.find(supp_pt->id()); // O(logN)
+                    if(node_ptr == this->nodes_map.end()){
                         typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*supp_pt); // O(1)
                         pts.push_back(inserted_node); // O(1)
                     }
-                    else{pts.push_back(node_ptr);}; // O(1)
+                    else{pts.push_back(node_ptr->second);}; // O(1)
                 }
             }
 
@@ -492,6 +492,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                     supplementary_points[d_vertex_id].push_back(v_intersection_point);  // O(logN)
                     supplementary_points[twin_cell_id].push_back(v_intersection_point);  // O(logN)
                     this->nodes_map[v_intersection_point->id()] = v_intersection_point;  // O(logN)
+                    this->dcel_.insert_node(*v_intersection_point);  // O(1)
                     v_intersection_point->set_boundary(true);
                     intersected_once = true;
 
@@ -640,26 +641,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         // Prohibited centroids
         std::set<int> prohibited_v_centroids;
 
-        // // Loop over all cells
-        // for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
-        //     typename simplex_t::NodeType v_centroid = this->v_cell2v_centroid[v_cell_id];
-        //     // Loop over halfedges
-        //     for (auto halfedge = this->dcel_.halfedges_begin(); halfedge != this->dcel_.halfedges_end(); ++halfedge){
-        //         // Verify if there is intersection
-        //         Eigen::Matrix<double, 2, 1> p1 = v_centroid;
-        //         Eigen::Matrix<double, 2, 1> p2 = point;
-        //         Eigen::Matrix<double, 2, 1> q1 = halfedge->node()->coords();
-        //         Eigen::Matrix<double, 2, 1> q2 = halfedge->next()->node()->coords();
-        //         bool check_intersection = false;
-        //         typename simplex_t::NodeType intersection_point;
-        //         find_intersection_by_points(p1, p2, q1, q2, check_intersection, intersection_point);
-        //         if (check_intersection && intersection_point != v_centroid){
-        //             prohibited_v_centroids.insert(v_cell_id);
-        //             break;
-        //         }
-        //     }
-        // }
-
         while(true){
             double min_distance = std::numeric_limits<double>::max();
             for (auto v_cell_id = 0; v_cell_id < this->v_cell2v_centroid.size(); ++v_cell_id){
@@ -699,15 +680,16 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                 bool check_intersection = false;
                 typename simplex_t::NodeType intersection_point;
                 find_intersection_by_points(p1, p2, q1, q2, check_intersection, intersection_point);
-                if (check_intersection && intersection_point != p1){
-                    std::cout << "Maleeeee" << std::endl;
+                if (check_intersection && 
+                    (std::abs(intersection_point(0)-p1(0))>1e-6 && std::abs(intersection_point(1)-p1(1))>1e-6)){
+                    // std::cout << "Maleeeee" << std::endl;
                     prohibited_v_centroids.insert(min_id);
                     found_one = true;
                     break;
                 }
             }
             if (!found_one){
-                std::cout << "Beneeeee" << std::endl;
+                // std::cout << "Beneeeee" << std::endl;
                 return min_id;
             }
         }

@@ -31,17 +31,16 @@ using coords_t = Eigen::Matrix<double, 1, 2>;
 int main() {
 
 // Load a mesh
-Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
 // Construct the Voronoi object starting from the mesh
 VoronoiClipped<2, 2> voronoi_obj(mesh);
 
 //Ask to the user how many points he wants to sample
-int n_points_grid;
-std::cout<<"How many points do you want to sample inside the domain?"<<std::endl;
-std::cin >> n_points_grid;
+int n_points_grid = 100000;
 
-// Generate a set of random points inside the domain
-Eigen::Matrix<double, Dynamic, Dynamic> sampled_points = mesh.sample(n_points_grid);
+// Generate a set of reproducible random points inside the domain
+int seed = 42;
+Eigen::Matrix<double, Dynamic, Dynamic> sampled_points = mesh.sample(n_points_grid, seed);
 assert(sampled_points.cols() == 2);
 
 int n_correct_ones = 0;
