@@ -14,53 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// #include <gtest/gtest.h>   // testing framework
-// // include eigen now to avoid possible linking errors
-// #include <Eigen/Dense>
-// #include <Eigen/Sparse>
-
-/*
-// utils
-#include "src/scalar_field_test.cpp"
-#include "src/vector_field_test.cpp"
-#include "src/matrix_field_test.cpp"
-#include "src/type_erasure_test.cpp"
-#include "src/binary_tree_test.cpp"
-// geometry
-#include "src/simplex_test.cpp"
-// #include "src/triangulation_test.cpp"
-#include "src/point_location_test.cpp"
-#include "src/kd_tree_test.cpp"
-#include "src/voronoi_test.cpp"
-// linear_algebra
-#include "src/kronecker_product_test.cpp"
-#include "src/vector_space_test.cpp"
-#include "src/binary_matrix_test.cpp"
-*/
-
-// #include "src/rand_linear_algebra_test.cpp"
-/*
-// finite_elements
-#include "src/fem_operators_test.cpp"
-#include "src/fem_pde_test.cpp"
-#include "src/integration_test.cpp"
-#include "src/lagrangian_basis_test.cpp"
-// optimization
-#include "src/optimization_test.cpp"
-// splines
-#include "src/spline_test.cpp"
-// fspai
-#include "src/fspai_test.cpp"
-*/
-
-// int main(/*int argc, char** argv*/) {
-//     // // start testing
-//     // testing::InitGoogleTest(&argc, argv);
-//     // return RUN_ALL_TESTS();
-
-//   return 0;
-// }
-
 
 #include <fdaPDE/geometry.h>
 #include <fdaPDE/src/geometry/voronoi.h>
@@ -74,69 +27,51 @@
 #include <cmath>
 #include <exception>
 using namespace fdapde;
-// using json = nlohmann::json;
-
 
 
 int main() {
+    // Load a mesh
+    Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+    // auto mesh = Triangulation<2, 2>::Square(0.0, 2.0, 256);
 
-// Load a mesh
-Triangulation<2, 2> mesh("data/mesh/north_italy/points.csv", "data/mesh/north_italy/elements.csv", "data/mesh/north_italy/boundary.csv", true, true);
+    // Print mesh measure
+    std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
-// auto mesh = Triangulation<2, 2>::Square(0.0, 2.0, 256);
-// DCEL<2,2> triang_dcel;
-// std::cout << "Here 1 " << std::endl;
-// std::vector<Eigen::Matrix<double, Eigen::Dynamic, 2>> holes;
-// triang_dcel.from_triangulation(mesh, holes);
-// std::cout << "Here 2 " << std::endl;
-// triang_dcel.export_to_json("data/mesh/square_2_dcel.json");
+    // auto start = std::chrono::high_resolution_clock::now();
+    VoronoiClipped<2, 2> voronoi_obj(mesh);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // std::cout << "Computational time: " << duration.count() << " us\n";
 
-std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
+    std::cout << "Voronoi has " << voronoi_obj.n_nodes() << " nodes, " << voronoi_obj.n_edges() << " edges and " << voronoi_obj.n_cells() << " cells." << std::endl;
 
-// auto start = std::chrono::high_resolution_clock::now();
-VoronoiClipped<2, 2> voronoi_obj(mesh);
-// auto end = std::chrono::high_resolution_clock::now();
-// auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-// std::cout << "Computational time: " << duration.count() << " us\n";
+    // Compute the measure for each Voronoi cell and the total Voronoi measure
+    int i = 0;
+    float sum=0;
+    int unbdd=0;
 
-std::cout << "Asking for nodes" << std::endl;
-int n_nodes = voronoi_obj.n_nodes();
-
-std::cout << "Asking for edges" << std::endl;
-int n_edges = voronoi_obj.n_edges();
-
-std::cout << "Asking for cells" << std::endl;
-int n_cells = voronoi_obj.n_cells();
-
-
-std::cout << "Voronoi has " << n_nodes << " nodes, " << n_edges << " edges and " << n_cells << " cells." << std::endl;
-
-// fate operazioni...
-int i = 0;
-float sum=0;
-int unbdd=0;
-
-for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
-    if (it->is_unbounded()) {
-        unbdd++;
-        continue;
+    for (auto it = voronoi_obj.cells_begin(); it != voronoi_obj.cells_end(); ++it){
+        if (it->is_unbounded()) {
+            unbdd++;
+            continue;
+        }
+        // compute the measure for each cell
+        auto measure = it->measure();
+        if (std::isfinite(measure)) {
+            sum += measure;
+            i++;
+        }
     }
 
-    auto measure = it->measure();
+    // Print the total measure
+    std::cout << "Printed area of " << i << " cells" << std::endl;
+    std::cout << "Area: " << sum <<std::endl;
+    std::cout << "Number of unbounded cell: " << unbdd << std::endl;
 
-    if (std::isfinite(measure)) {
-        sum += measure;
-        i++;
-    }
-}
+    // Export the Voronoi in a json file
+    std::cout << "Exporting..." << std::endl;
+    voronoi_obj.export_to_json("plots/data/brain.json");
+    std::cout << "Finished exporting" << std::endl;
 
-std::cout << "Printed area of " << i << " cells" << std::endl;
-std::cout << "Area " << sum <<std::endl;
-std::cout << "Unbounded " << unbdd << std::endl;
-
-std::cout << "Exporting..." << std::endl;
-voronoi_obj.export_to_json("plots/data/north_italy.json");
-std::cout << "Finished exporting" << std::endl;
-
-return 0;
+    return 0;
 }

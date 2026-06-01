@@ -469,7 +469,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
     void export_to_json(const std::string& filename) const{
         json j;  
         j["nodes"] = json::array();
-        std::cout << "Nodes" << std::endl;
         for (auto it = nodes_cbegin(); it != nodes_cend(); ++it) {
             json node;
             node["id"] = it->id();
@@ -478,7 +477,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
             j["nodes"].push_back(node);
         }  
         j["edges"] = json::array();
-        std::cout << "Edges" << std::endl;
         for (auto it = halfedges_cbegin(); it != halfedges_cend(); ++it) {
             json edge;
             edge["id"] = it->id();
@@ -490,7 +488,6 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
 
         j["cells"] = json::array();
-        std::cout << "Cells" << std::endl;
         for (auto it = cells_cbegin(); it != cells_cend(); ++it) {
             json cell;
             cell["id"] = it->id();
@@ -506,9 +503,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
                     std::cerr << "ERROR: null halfedge in cell " << it->id() << std::endl;
                     break;
                 }
-                // std::cout << "Is h nullptr? " << (h==nullptr) << std::endl;
                 cell["edges"].push_back(h->id());
-                // std::cout << "Pushed" << std::endl;
                 if(h==nullptr){
                     std::cout << "Nullpointer" << std::endl;
                 }
@@ -616,14 +611,14 @@ template <int LocalDim, int EmbedDim> class DCEL {
         return h1;
     }
 
-    void remove_nodes(std::set<int> nodes_ids){ // -> O(N^2) (on average O(1))
+    void remove_nodes(std::set<int> nodes_ids){ 
 
-        for (int node_id : nodes_ids){ // O(N) (but on average much less: you do not remove all nodes)
+        for (int node_id : nodes_ids){ 
             // Find node in nodes_
             auto node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [node_id](const node_t& p) {
                     return p.id() == node_id;
-                });  // O(N)
+                });  
 
             if (node_it == nodes_.end()) {
                 continue;
@@ -639,7 +634,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
                 auto neigh_node_it = std::find_if(nodes_.begin(), nodes_.end(),
                 [neigh_node_id](const node_t& p) {
                     return p.id() == neigh_node_id;
-                }); // O(N)
+                }); 
 
                 // Remove from the neighbour's halfedge_lookup_ the halfedge neigh->node_to_remove
                 if (neigh_node_it != nodes_.end()){
@@ -649,14 +644,14 @@ template <int LocalDim, int EmbedDim> class DCEL {
             // Halfedges to remove
             std::vector<halfedge_t*> halfedges_to_remove;
             
-            for (auto it = halfedges_.begin(); it != halfedges_.end(); ++it){ // O(N)
+            for (auto it = halfedges_.begin(); it != halfedges_.end(); ++it){ 
                 if (it->node()->id() != node_id){
                     continue;
                 }
-                halfedges_to_remove.push_back(&(*it)); // O(N) (maybe jou can allocate beforehand)
+                halfedges_to_remove.push_back(&(*it)); 
             }
 
-            for(halfedge_t* h: halfedges_to_remove){ // O(K<<N)
+            for(halfedge_t* h: halfedges_to_remove){ 
 
                 int neigh = h->twin()->node()->id();
 
@@ -679,17 +674,17 @@ template <int LocalDim, int EmbedDim> class DCEL {
 
                 halfedges_.remove_if([twin_id](const halfedge_t& he) {
                     return he.id() == twin_id;
-                }); // O(N)
+                }); 
                 halfedges_.remove_if([h_id](const halfedge_t& he) {
                     return he.id() == h_id;
                 });
             }
         }
         // Loop over points and remove them
-        for (int node_id : nodes_ids){  // O(N)
+        for (int node_id : nodes_ids){  
             nodes_.remove_if([node_id](const node_t& n) {  
                     return n.id() == node_id;
-                });  // O(N)
+                });  
         }
     }
    
@@ -1059,10 +1054,10 @@ template <int LocalDim, int EmbedDim> class DCEL {
         }
     }
 
-    void update_halfedges_with_cells(){ // --> O(N)
+    void update_halfedges_with_cells(){ 
 
         // Loop over cells
-        for (cell_iterator cur_cell = cells_begin(); cur_cell != cells_end(); cur_cell++){ // O(N)
+        for (cell_iterator cur_cell = cells_begin(); cur_cell != cells_end(); cur_cell++){ 
 
             // Loop over cell halfedgesù
             halfedge_t* start = cur_cell->halfedge();
@@ -1072,7 +1067,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
             start->set_cell(&(*cur_cell));
 
             // Loop over halfedges 
-            while(start != cur_halfedge){ // O(1)
+            while(start != cur_halfedge){ 
                 // Update halfedge' s cell
                 cur_halfedge->set_cell(&(*cur_cell));
                 cur_halfedge = cur_halfedge->next();

@@ -29,29 +29,29 @@ using coords_t = Eigen::Matrix<double, 1, 2>;
 
 
 int main() {
+	// Load a mesh
+	Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+	// Construct the Voronoi object starting from the mesh
+	VoronoiClipped<2, 2> voronoi_obj(mesh);
 
-// Load a mesh
-Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
-// Construct the Voronoi object starting from the mesh
-VoronoiClipped<2, 2> voronoi_obj(mesh);
+	// Fix the number of points to sample inside the domain and the seed for reproducibility
+	int n_points_grid = 100000;
+	int seed = 42;
 
-//Ask to the user how many points he wants to sample
-int n_points_grid = 100000;
+	// Generate a set of reproducible random points inside the domain
+	Eigen::Matrix<double, Dynamic, Dynamic> sampled_points = mesh.sample(n_points_grid, seed);
+	assert(sampled_points.cols() == 2);
 
-// Generate a set of reproducible random points inside the domain
-int seed = 42;
-Eigen::Matrix<double, Dynamic, Dynamic> sampled_points = mesh.sample(n_points_grid, seed);
-assert(sampled_points.cols() == 2);
+	// Count how many points satisfy the Voronoi definition
+	int n_correct_ones = 0;
+	coords_t cur_point;
+	for (int i=0; i<sampled_points.rows(); ++i){
+		cur_point = sampled_points.row(i);
+		n_correct_ones += voronoi_obj.check_definition_on_single_point(cur_point);
+	}
 
-int n_correct_ones = 0;
-coords_t cur_point;
-for (int i=0; i<sampled_points.rows(); ++i){
-	cur_point = sampled_points.row(i);
-	n_correct_ones += voronoi_obj.check_definition_on_single_point(cur_point);
-}
+	std::cout<<"The total number of points in the grid is: "<< n_points_grid <<std::endl;
+	std::cout<<"The number of points that satisfy the Voronoi definition is: "<< n_correct_ones <<std::endl;
 
-std::cout<<"The total number of points in the grid is: "<< n_points_grid <<std::endl;
-std::cout<<"The number of points that satisfy the Voronoi definition is: "<< n_correct_ones <<std::endl;
-
-return 0;
+	return 0;
 }
