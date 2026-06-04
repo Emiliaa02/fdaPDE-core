@@ -57,8 +57,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
     private:
 
-    std::vector<std::set<int>> partition_boundary_edges(const Triangulation<local_dim, embed_dim>& mesh){ 
-       
+    std::vector<std::set<int>> partition_boundary_edges(const Triangulation<local_dim, embed_dim>& mesh){  
         // Already visited cells
         std::set<int> visited;
         // Connected boundary-edge components (outer boundary and holes)
@@ -68,7 +67,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
         for (auto& kv : adj){
             int start = kv.first;
-
             if (visited.count(start))
                 continue;
 
@@ -125,30 +123,14 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             typename dcel_t::halfedge_t* cur_halfedge = nullptr;
             typename dcel_t::halfedge_t* prev_halfedge = nullptr;
 
+            //Retrieve ID of the current cell
+            int cur_cell_id = cur_cell_it->id();
             // Create a list of its points
             std::list<typename dcel_t::node_t*> pts;
             // Get nodes
             std::vector<typename dcel_t::node_t*> nodes = cur_cell_it -> cell_nodes(); 
-            for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){ 
-                auto to_exclude_it = node_ids_to_remove.find((*cell_node)->id());  
-                if(to_exclude_it == node_ids_to_remove.end()){
-                    pts.push_back(*cell_node); 
-                }
-            }
-
-            // Get supplementary points
-            auto check_supp_pt = supplementary_points.find(cur_cell_it->id()); 
-            if (check_supp_pt != supplementary_points.end()){
-                // Insert supplementary points in DCEL structure, if they are not yet included 
-                for(typename dcel_t::node_t* supp_pt : check_supp_pt->second){                    
-                    auto node_ptr = this->nodes_map.find(supp_pt->id()); 
-                    if(node_ptr == this->nodes_map.end()){
-                        typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*supp_pt); 
-                        pts.push_back(inserted_node); 
-                    }
-                    else{pts.push_back(node_ptr->second);}; 
-                }
-            }
+            // Fill list of points
+            fill_list_of_points(nodes, node_ids_to_remove, cur_cell_id, supplementary_points, this->nodes_map, pts);
 
             // Compute the center of mass to perform the ordering
             typename simplex_t::NodeType center_of_mass = compute_center_of_mass(pts); 
@@ -164,11 +146,8 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             // Put in counterclockwise order the points
             pts.sort([&](dcel_t::node_t* pa, dcel_t::node_t* pb)
                 {
-                    double ang_a = std::atan2(pa->coords()(1) - center_of_mass(1),
-                                            pa->coords()(0) - center_of_mass(0));
-
-                    double ang_b = std::atan2(pb->coords()(1) - center_of_mass(1),
-                                            pb->coords()(0) - center_of_mass(0));
+                    double ang_a = std::atan2(pa->coords()(1) - center_of_mass(1), pa->coords()(0) - center_of_mass(0));
+                    double ang_b = std::atan2(pb->coords()(1) - center_of_mass(1), pb->coords()(0) - center_of_mass(0));
 
                     return ang_a < ang_b;
                 }
@@ -176,55 +155,9 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
             // Check if the centroid has to be included into the polygon
             if (!only_two_pts){
-                auto centroid_it = cell_centroid_coords.find((*cur_cell_it).id()); 
-                if(centroid_it != cell_centroid_coords.end()){
-
-                    std::vector<int> adjacent_nodes_on_boundary = adjacent_points_map.at((*cur_cell_it).id()); 
-                    std::vector<typename dcel_t::node_t*> on_boundary_pts;
-
-                    for (auto pt_: pts){
-                        for (int ad_node : adjacent_nodes_on_boundary){
-                            bool areAligned = false;
-                            auto areAligned_it = edge_vertexes2intersection.find(pt_->id()); 
-                            if(areAligned_it != edge_vertexes2intersection.end()){
-
-                                areAligned = (edge_vertexes2intersection.at(pt_->id()) == std::make_pair((*cur_cell_it).id(), ad_node)) 
-                                            || (edge_vertexes2intersection.at(pt_->id()) == std::make_pair(ad_node, (*cur_cell_it).id())); 
-                            }
-                            if((ad_node != (*cur_cell_it).id()) && areAligned){
-                                on_boundary_pts.push_back(pt_); 
-                                break;
-                            }
-                        }
-                    }
-
-                    if (on_boundary_pts.size() < 2){
-                        std::cout<<"Cell ID: "<<(*cur_cell_it).id()<<std::endl;
-                        throw std::runtime_error("on_boundary_pts has size < 2");
-                    }
-                    
-                    auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]); 
-                    auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]); 
-
-                    if (std::distance(pts.begin(), first_position) >
-                        std::distance(pts.begin(), second_position))
-                    {
-                        std::swap(first_position, second_position);
-                    }
-
-                    if (first_position != pts.end() && second_position != pts.end()){
-                        if(first_position == pts.begin() && second_position == std::prev(pts.end())){
-                            pts.push_back(cell_centroid_coords.at((*cur_cell_it).id()));
-                            typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
-                        }
-                        else{
-                            pts.insert(std::next(first_position), cell_centroid_coords.at((*cur_cell_it).id()));
-                            typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*cell_centroid_coords.at((*cur_cell_it).id()));
-                        }
-                    }
-                }
+                // Include the centroid into the polygon in the correct position
+                insert_cell_centroid_in_boundary_loop(cell_centroid_coords, cur_cell_id, edge_vertexes2intersection, adjacent_points_map, pts);
             }
-            
             if(pts.size() < 2){
                 std::cout << "LESS THAN 2 POINTS" << std::endl;
                 continue;
@@ -288,11 +221,89 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         // Declare cell as clipped
         cur_cell_it->clipped();
         }
-
         // Remove the nodes outside the domain and the corrensponding halfedges
         this->dcel_.remove_nodes(node_ids_to_remove); 
     }   
 
+    void fill_list_of_points(std::vector<typename dcel_t::node_t*>& nodes,  
+                            std::set<int>& node_ids_to_remove, int cur_cell_id,
+                            std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
+                            std::map<int, typename dcel_t::node_t*>& nodes_map, std::list<typename dcel_t::node_t*>& pts){
+        // Loop over nodes of the cell
+        for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){ 
+            auto to_exclude_it = node_ids_to_remove.find((*cell_node)->id());  
+            if(to_exclude_it == node_ids_to_remove.end()){
+                pts.push_back(*cell_node); 
+            }
+        }
+        // Get supplementary points
+        auto check_supp_pt = supplementary_points.find(cur_cell_id); 
+        if (check_supp_pt != supplementary_points.end()){
+            // Insert supplementary points in DCEL structure, if they are not yet included 
+            for(typename dcel_t::node_t* supp_pt : check_supp_pt->second){                    
+                auto node_ptr = this->nodes_map.find(supp_pt->id()); 
+                if(node_ptr == this->nodes_map.end()){
+                    typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*supp_pt); 
+                    pts.push_back(inserted_node); 
+                }
+                else{pts.push_back(node_ptr->second);}; 
+            }
+        }
+    }
+
+    void insert_cell_centroid_in_boundary_loop(std::map<int, typename dcel_t::node_t*>& cell_centroid_coords, int cur_cell_id, 
+                                               std::map<int, std::pair<int, int>>& edge_vertexes2intersection, 
+                                               std::map<int, std::vector<int>>& adjacent_points_map,
+                                               std::list<typename dcel_t::node_t*>& pts){
+
+        auto centroid_it = cell_centroid_coords.find(cur_cell_id); 
+        if(centroid_it != cell_centroid_coords.end()){
+
+            std::vector<int> adjacent_nodes_on_boundary = adjacent_points_map.at(cur_cell_id); 
+            std::vector<typename dcel_t::node_t*> on_boundary_pts;
+
+            for (auto pt_: pts){
+                for (int ad_node : adjacent_nodes_on_boundary){
+                    bool areAligned = false;
+                    auto areAligned_it = edge_vertexes2intersection.find(pt_->id()); 
+                    if(areAligned_it != edge_vertexes2intersection.end()){
+
+                        areAligned = (edge_vertexes2intersection.at(pt_->id()) == std::make_pair(cur_cell_id, ad_node)) 
+                                    || (edge_vertexes2intersection.at(pt_->id()) == std::make_pair(ad_node, cur_cell_id)); 
+                    }
+                    if((ad_node != cur_cell_id) && areAligned){
+                        on_boundary_pts.push_back(pt_); 
+                        break;
+                    }
+                }
+            }
+
+            if (on_boundary_pts.size() < 2){
+                std::cout<<"Cell ID: "<< cur_cell_id <<std::endl;
+                throw std::runtime_error("on_boundary_pts has size < 2");
+            }
+            
+            auto first_position  = std::find(pts.begin(), pts.end(), on_boundary_pts[0]); 
+            auto second_position = std::find(pts.begin(), pts.end(), on_boundary_pts[1]); 
+
+            if (std::distance(pts.begin(), first_position) >
+                std::distance(pts.begin(), second_position))
+            {
+                std::swap(first_position, second_position);
+            }
+
+            if (first_position != pts.end() && second_position != pts.end()){
+                if(first_position == pts.begin() && second_position == std::prev(pts.end())){
+                    pts.push_back(cell_centroid_coords.at(cur_cell_id));
+                    typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*cell_centroid_coords.at(cur_cell_id));
+                }
+                else{
+                    pts.insert(std::next(first_position), cell_centroid_coords.at(cur_cell_id));
+                    typename dcel_t::node_t* inserted_node = this->dcel_.insert_node(*cell_centroid_coords.at(cur_cell_id));
+                }
+            }
+        }
+    }
 
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
                                 std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
@@ -392,7 +403,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
         return d_boundary_edge;
     }
-
 
     void propagate_boundary_intersections(const Triangulation<local_dim, embed_dim>& mesh, std::list<int>& to_check_v_cells,  
                                         std::set<std::tuple<int, int, int>>& already_checked,  std::map<int, int>& infty_halfedges_midpoints,
