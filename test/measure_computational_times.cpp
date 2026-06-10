@@ -23,17 +23,26 @@
 #include <limits>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include <exception>
 using namespace fdapde;
+namespace fs = std::filesystem;
 using coords_t = Eigen::Matrix<double, 1, 2>;
 
 int main(){
     auto start = std::chrono::steady_clock::now();
     auto end = std::chrono::steady_clock::now();
 
+    // Create the directory "computational times" if it does not exist
+    fs::path dir = "test/data/computational_times";
+
+    if (!fs::exists(dir)) {
+        fs::create_directories(dir);
+    }
+
     // Files definition
-    std::ofstream file_voronoi("data/computational_times/voronoi.txt");
-    std::ofstream file_voronoi_clipped("data/computational_times/voronoi_clipped.txt");
+    std::ofstream file_voronoi("test/data/computational_times/voronoi.txt");
+    std::ofstream file_voronoi_clipped("test/data/computational_times/voronoi_clipped.txt");
 
     if (!file_voronoi || !file_voronoi_clipped) {
         std::cerr << "Failed to open output files.\n";
@@ -48,9 +57,9 @@ int main(){
     std::cout << "Creating Voronoi for unit_square_16" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_16/points.csv",
-            "data/mesh/unit_square_16/elements.csv",
-            "data/mesh/unit_square_16/boundary.csv",
+            "test/data/mesh/unit_square_16/points.csv",
+            "test/data/mesh/unit_square_16/elements.csv",
+            "test/data/mesh/unit_square_16/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -63,9 +72,9 @@ int main(){
     std::cout << "Creating Voronoi for unit_square_32" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_32/points.csv",
-            "data/mesh/unit_square_32/elements.csv",
-            "data/mesh/unit_square_32/boundary.csv",
+            "test/data/mesh/unit_square_32/points.csv",
+            "test/data/mesh/unit_square_32/elements.csv",
+            "test/data/mesh/unit_square_32/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -78,9 +87,9 @@ int main(){
     std::cout << "Creating Voronoi for unit_square_64" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_64/points.csv",
-            "data/mesh/unit_square_64/elements.csv",
-            "data/mesh/unit_square_64/boundary.csv",
+            "test/data/mesh/unit_square_64/points.csv",
+            "test/data/mesh/unit_square_64/elements.csv",
+            "test/data/mesh/unit_square_64/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -93,9 +102,9 @@ int main(){
     std::cout << "Creating Voronoi for unit_square_128" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_128/points.csv",
-            "data/mesh/unit_square_128/elements.csv",
-            "data/mesh/unit_square_128/boundary.csv",
+            "test/data/mesh/unit_square_128/points.csv",
+            "test/data/mesh/unit_square_128/elements.csv",
+            "test/data/mesh/unit_square_128/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -116,9 +125,9 @@ int main(){
     std::cout << "Creating Voronoi Clipped for unit_square_16" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_16/points.csv",
-            "data/mesh/unit_square_16/elements.csv",
-            "data/mesh/unit_square_16/boundary.csv",
+            "test/data/mesh/unit_square_16/points.csv",
+            "test/data/mesh/unit_square_16/elements.csv",
+            "test/data/mesh/unit_square_16/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -131,9 +140,9 @@ int main(){
     std::cout << "Creating Voronoi Clipped for unit_square_32" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_32/points.csv",
-            "data/mesh/unit_square_32/elements.csv",
-            "data/mesh/unit_square_32/boundary.csv",
+            "test/data/mesh/unit_square_32/points.csv",
+            "test/data/mesh/unit_square_32/elements.csv",
+            "test/data/mesh/unit_square_32/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -146,9 +155,9 @@ int main(){
     std::cout << "Creating Voronoi Clipped for unit_square_64" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_64/points.csv",
-            "data/mesh/unit_square_64/elements.csv",
-            "data/mesh/unit_square_64/boundary.csv",
+            "test/data/mesh/unit_square_64/points.csv",
+            "test/data/mesh/unit_square_64/elements.csv",
+            "test/data/mesh/unit_square_64/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();
@@ -161,9 +170,9 @@ int main(){
     std::cout << "Creating Voronoi Clipped for unit_square_128" << std::endl;
     {
         Triangulation<2, 2> mesh(
-            "data/mesh/unit_square_128/points.csv",
-            "data/mesh/unit_square_128/elements.csv",
-            "data/mesh/unit_square_128/boundary.csv",
+            "test/data/mesh/unit_square_128/points.csv",
+            "test/data/mesh/unit_square_128/elements.csv",
+            "test/data/mesh/unit_square_128/boundary.csv",
             true, true);
 
         start = std::chrono::steady_clock::now();

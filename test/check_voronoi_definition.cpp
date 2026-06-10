@@ -30,7 +30,7 @@ using coords_t = Eigen::Matrix<double, 1, 2>;
 
 int main() {
 	// Load a mesh
-	Triangulation<2, 2> mesh("data/mesh/unit_square_16/points.csv", "data/mesh/unit_square_16/elements.csv", "data/mesh/unit_square_16/boundary.csv", true, true);
+	Triangulation<2, 2> mesh("test/data/mesh/unit_square_16/points.csv", "test/data/mesh/unit_square_16/elements.csv", "test/data/mesh/unit_square_16/boundary.csv", true, true);
 	// Construct the Voronoi object starting from the mesh
 	VoronoiClipped<2, 2> voronoi_obj(mesh);
 

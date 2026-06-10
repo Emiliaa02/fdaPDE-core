@@ -31,17 +31,13 @@ using namespace fdapde;
 
 int main() {
     // Load a mesh
-    Triangulation<2, 2> mesh("data/mesh/brain/points.csv", "data/mesh/brain/elements.csv", "data/mesh/brain/boundary.csv", true, true);
+    Triangulation<2, 2> mesh("test/data/mesh/unit_square_16/points.csv", "test/data/mesh/unit_square_16/elements.csv", "test/data/mesh/unit_square_16/boundary.csv", true, true);
     // auto mesh = Triangulation<2, 2>::Square(0.0, 2.0, 256);
 
     // Print mesh measure
     std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
 
-    // auto start = std::chrono::high_resolution_clock::now();
     VoronoiClipped<2, 2> voronoi_obj(mesh);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    // std::cout << "Computational time: " << duration.count() << " us\n";
 
     std::cout << "Voronoi has " << voronoi_obj.n_nodes() << " nodes, " << voronoi_obj.n_edges() << " edges and " << voronoi_obj.n_cells() << " cells." << std::endl;
 
@@ -70,7 +66,7 @@ int main() {
 
     // Export the Voronoi in a json file
     std::cout << "Exporting..." << std::endl;
-    voronoi_obj.export_to_json("plots/data/brain.json");
+    voronoi_obj.export_to_json("test/plots/data/unit_square_16.json");
     std::cout << "Finished exporting" << std::endl;
 
     return 0;
