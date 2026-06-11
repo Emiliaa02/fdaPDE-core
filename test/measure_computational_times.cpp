@@ -30,6 +30,8 @@ namespace fs = std::filesystem;
 using coords_t = Eigen::Matrix<double, 1, 2>;
 
 int main(){
+    std::cout << "\n\n\n" << std::endl;
+    std::cout << "Measuring computational times..." << std::endl;
     auto start = std::chrono::steady_clock::now();
     auto end = std::chrono::steady_clock::now();
 
@@ -54,7 +56,6 @@ int main(){
     std::chrono::steady_clock::duration duration_1, duration_2, duration_3, duration_4;
 
     // Load first mesh
-    std::cout << "Creating Voronoi for unit_square_16" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_16/points.csv",
@@ -69,7 +70,6 @@ int main(){
     }
 
     // Load second mesh
-    std::cout << "Creating Voronoi for unit_square_32" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_32/points.csv",
@@ -84,7 +84,6 @@ int main(){
     }
 
     // Load third mesh
-    std::cout << "Creating Voronoi for unit_square_64" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_64/points.csv",
@@ -99,7 +98,6 @@ int main(){
     }
 
     // Load fourth mesh
-    std::cout << "Creating Voronoi for unit_square_128" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_128/points.csv",
@@ -122,7 +120,6 @@ int main(){
     // VORONOI CLIPPED
 
     // Load first mesh
-    std::cout << "Creating Voronoi Clipped for unit_square_16" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_16/points.csv",
@@ -137,7 +134,6 @@ int main(){
     }
 
     // Load second mesh
-    std::cout << "Creating Voronoi Clipped for unit_square_32" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_32/points.csv",
@@ -152,7 +148,6 @@ int main(){
     }
 
     // Load third mesh
-    std::cout << "Creating Voronoi Clipped for unit_square_64" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_64/points.csv",
@@ -167,7 +162,6 @@ int main(){
     }
 
     // Load fourth mesh
-    std::cout << "Creating Voronoi Clipped for unit_square_128" << std::endl;
     {
         Triangulation<2, 2> mesh(
             "test/data/mesh/unit_square_128/points.csv",
@@ -186,6 +180,8 @@ int main(){
         << std::chrono::duration_cast<std::chrono::microseconds>(duration_2).count() << '\n'
         << std::chrono::duration_cast<std::chrono::microseconds>(duration_3).count() << '\n'
         << std::chrono::duration_cast<std::chrono::microseconds>(duration_4).count() << '\n';
+
+    std::cout << "Finished measuring computational times..." << std::endl;
 
     return 0;
 }

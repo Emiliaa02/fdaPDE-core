@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy as np
+import argparse
 
 
 # Function to plot the Voronoi
@@ -57,11 +58,15 @@ def plot_voronoi(shape, MESHES_PATH, VORONOI_PATH):
 
 
 def main():
-	MESHES_PATH = "test/data/mesh"
-	VORONOI_PATH = "test/plots/data"
-	shape = "unit_square_16"
- 
-	plot_voronoi(shape, MESHES_PATH, VORONOI_PATH)
+    MESHES_PATH = "test/data/mesh"
+    VORONOI_PATH = "test/plots/data"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--shape", required=True)
+    args = parser.parse_args()
+
+    shape = args.shape
+
+    plot_voronoi(shape, MESHES_PATH, VORONOI_PATH)
  
  
 if __name__ == "__main__":

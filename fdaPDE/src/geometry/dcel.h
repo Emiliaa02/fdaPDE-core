@@ -689,7 +689,7 @@ template <int LocalDim, int EmbedDim> class DCEL {
     }
    
         
-    node_t* find_node_by_coords(const coords_t& coords) {
+    node_t* find_node_by_coords(const coords_t& coords){
         auto it = std::find_if(nodes_.begin(), nodes_.end(),
             [&](node_t& node) {
                 return node.coords() == coords;

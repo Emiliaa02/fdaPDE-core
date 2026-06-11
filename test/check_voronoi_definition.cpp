@@ -28,9 +28,19 @@ using namespace fdapde;
 using coords_t = Eigen::Matrix<double, 1, 2>;
 
 
-int main() {
+int main(int argc, char* argv[]) {
+
+	// Read shape if present
+    if (argc < 2){
+        std::cerr << "Shape needed as input" << std::endl;
+        return 1;
+    }
+    std::string shape = argv[1];
+
 	// Load a mesh
-	Triangulation<2, 2> mesh("test/data/mesh/unit_square_16/points.csv", "test/data/mesh/unit_square_16/elements.csv", "test/data/mesh/unit_square_16/boundary.csv", true, true);
+	Triangulation<2, 2> mesh("test/data/mesh/" + shape + "/points.csv", 
+                        "test/data/mesh/" + shape + "/elements.csv", 
+                        "test/data/mesh/" + shape + "/boundary.csv", true, true);
 	// Construct the Voronoi object starting from the mesh
 	VoronoiClipped<2, 2> voronoi_obj(mesh);
 
@@ -50,8 +60,8 @@ int main() {
 		n_correct_ones += voronoi_obj.check_definition_on_single_point(cur_point);
 	}
 
-	std::cout<<"The total number of points in the grid is: "<< n_points_grid <<std::endl;
-	std::cout<<"The number of points that satisfy the Voronoi definition is: "<< n_correct_ones <<std::endl;
+	std::cout << "\n\n\n" << std::endl;
+	std::cout << "Percentage of points satisfying definition: " << (n_correct_ones / n_points_grid)*100 << " %" << std::endl;
 
 	return 0;
 }

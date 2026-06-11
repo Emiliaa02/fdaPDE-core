@@ -35,11 +35,11 @@ def main():
 
 	unclipped_times = np.loadtxt(os.path.join(COMPUTATIONAL_COSTS_PATH, "voronoi.txt"), dtype=np.int64)
 
-	plot_computational_cost(N, unclipped_times, "Computational cost - Voronoi Unclipped", "test/plots/voronoi_unclipped.png")
+	plot_computational_cost(N, unclipped_times, "Computational cost - Voronoi Unclipped", "test/plots/computational_times_voronoi_unclipped.png")
 
 	clipped_times = np.loadtxt(os.path.join(COMPUTATIONAL_COSTS_PATH, "voronoi_clipped.txt"), dtype=np.int64)
 
-	plot_computational_cost(N, clipped_times, "Computational cost - Voronoi Clipped", "test/plots/voronoi_clipped.png")
+	plot_computational_cost(N, clipped_times, "Computational cost - Voronoi Clipped", "test/plots/computational_times_voronoi_clipped.png")
  
  
 if __name__ == "__main__":

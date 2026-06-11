@@ -26,7 +26,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         // Voronoi constructor
         clip_voronoi(mesh, this->infty_id, this->out_of_boundary_d_centroids, this->d_centroid2v_vertex, this->vertexes2halfedge,
                     this->midpoints_lookup, this->infty_halfedges_midpoints);  
-        std::cout << "\nFinished Voronoi clipped constructor\n" << std::endl;
     }
 
     // Check if Voronoi definition holds for single point
@@ -57,7 +56,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
     private:
 
-    std::vector<std::set<int>> partition_boundary_edges(const Triangulation<local_dim, embed_dim>& mesh){  
+    std::vector<std::set<int>> partition_boundary_edges(const Triangulation<local_dim, embed_dim>& mesh) const{  
         // Already visited cells
         std::set<int> visited;
         // Connected boundary-edge components (outer boundary and holes)
@@ -98,10 +97,10 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
 
     void clip_voronoi(const Triangulation<local_dim, embed_dim>& mesh, int infty_id,
-                      std::set<int>& out_of_boundary_d_centroids, std::vector<int>& d_centroid2v_vertex,
+                      std::set<int>& out_of_boundary_d_centroids, const std::vector<int>& d_centroid2v_vertex,
                       std::multimap<std::pair<int, int>, typename dcel_t::halfedge_t*>& vertexes2halfedge,
-                      std::map<int, typename simplex_t::NodeType>&  midpoints_lookup,
-                      std::map<int, int>& infty_halfedges_midpoints){
+                      const std::map<int, typename simplex_t::NodeType>&  midpoints_lookup,
+                      const std::map<int, int>& infty_halfedges_midpoints){
 
         std::map<int, std::vector<typename dcel_t::node_t*>> supplementary_points;
         std::map<int, std::vector<int>> adjacent_points_map = adjacent_points(mesh); 
@@ -159,7 +158,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                 insert_cell_centroid_in_boundary_loop(cell_centroid_coords, cur_cell_id, edge_vertexes2intersection, adjacent_points_map, pts);
             }
             if(pts.size() < 2){
-                std::cout << "LESS THAN 2 POINTS" << std::endl;
                 continue;
             }
 
@@ -225,10 +223,10 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         this->dcel_.remove_nodes(node_ids_to_remove); 
     }   
 
-    void fill_list_of_points(std::vector<typename dcel_t::node_t*>& nodes,  
-                            std::set<int>& node_ids_to_remove, int cur_cell_id,
-                            std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
-                            std::map<int, typename dcel_t::node_t*>& nodes_map, std::list<typename dcel_t::node_t*>& pts){
+    void fill_list_of_points(const std::vector<typename dcel_t::node_t*>& nodes,  
+                            const std::set<int>& node_ids_to_remove, int cur_cell_id,
+                            const std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
+                            const std::map<int, typename dcel_t::node_t*>& nodes_map, std::list<typename dcel_t::node_t*>& pts){
         // Loop over nodes of the cell
         for (auto cell_node = nodes.cbegin(); cell_node != nodes.cend(); cell_node++){ 
             auto to_exclude_it = node_ids_to_remove.find((*cell_node)->id());  
@@ -251,9 +249,9 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
         }
     }
 
-    void insert_cell_centroid_in_boundary_loop(std::map<int, typename dcel_t::node_t*>& cell_centroid_coords, int cur_cell_id, 
-                                               std::map<int, std::pair<int, int>>& edge_vertexes2intersection, 
-                                               std::map<int, std::vector<int>>& adjacent_points_map,
+    void insert_cell_centroid_in_boundary_loop(const std::map<int, typename dcel_t::node_t*>& cell_centroid_coords, int cur_cell_id, 
+                                               const std::map<int, std::pair<int, int>>& edge_vertexes2intersection, 
+                                               const std::map<int, std::vector<int>>& adjacent_points_map,
                                                std::list<typename dcel_t::node_t*>& pts){
 
         auto centroid_it = cell_centroid_coords.find(cur_cell_id); 
@@ -279,7 +277,6 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             }
 
             if (on_boundary_pts.size() < 2){
-                std::cout<<"Cell ID: "<< cur_cell_id <<std::endl;
                 throw std::runtime_error("on_boundary_pts has size < 2");
             }
             
@@ -308,12 +305,12 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     void boundary_cells_detection(const Triangulation<local_dim, embed_dim>& mesh, 
                                 std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points,
                                 std::set<int>& on_boundary,
-                                std::set<int>& out_of_boundary_d_centroids,
-                                std::vector<int>& d_centroid2v_vertex,
+                                const std::set<int>& out_of_boundary_d_centroids,
+                                const std::vector<int>& d_centroid2v_vertex,
                                 int infty_id, std::set<int>& node_ids_to_remove,
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords,
-                                std::map<int, int>& infty_halfedges_midpoints,
-                                std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
+                                const std::map<int, int>& infty_halfedges_midpoints,
+                                const std::map<int, typename simplex_t::NodeType>& midpoints_lookup,
                                 std::map<int, std::pair<int, int>>& edge_vertexes2intersection){ 
 
         // Fill the structure containing the node ids to remove during the clipping (i.e. the infinity node and the ones out of the boundary)
@@ -341,7 +338,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
             Eigen::Matrix<int, Dynamic, 1> node_ids = d_boundary_edge->node_ids();
             int d_vertex_id = node_ids(0);
             Eigen::Matrix<double, 2, 1> d_vertex = mesh.node(d_vertex_id);
-            typename dcel_t::cell_t* v_cell = this->cells_map[d_vertex_id]; 
+            typename dcel_t::cell_t* v_cell = this->cells_map.at(d_vertex_id); 
 
             // Cells queue
             std::list<int> to_check_v_cells;
@@ -364,7 +361,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     void add_boundary_voronoi_site(const Triangulation<local_dim, embed_dim>& mesh, 
                                 std::map<int, typename dcel_t::node_t*>& cell_centroid_coords, int& counter){ 
         // If the cell centroid is at the boundary and is not already present as a node in the DCEL, add it and set that it as a boundary node
-        for(auto cell_it = this->dcel_.cells_begin(); cell_it != this->dcel_.cells_end(); ++cell_it){ 
+        for(auto cell_it = this->dcel_.cells_cbegin(); cell_it != this->dcel_.cells_cend(); ++cell_it){ 
             int cur_cell_id = cell_it -> id();
             auto cur_centroid_coords = mesh.node(cur_cell_id);
             typename dcel_t::node_t* new_centroid_node;
@@ -385,7 +382,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
     triangulation_t::boundary_edge_iterator find_boundary_edge(const Triangulation<local_dim, embed_dim>& mesh,
-                                            const std::set<int>& boundary){
+                                            const std::set<int>& boundary) const{
 
         bool found_boundary_edge = false;
         auto d_boundary_edge = mesh.boundary_edges_begin(); 
@@ -405,9 +402,9 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
     void propagate_boundary_intersections(const Triangulation<local_dim, embed_dim>& mesh, std::list<int>& to_check_v_cells,  
-                                        std::set<std::tuple<int, int, int>>& already_checked,  std::map<int, int>& infty_halfedges_midpoints,
+                                        std::set<std::tuple<int, int, int>>& already_checked,  const std::map<int, int>& infty_halfedges_midpoints,
                                         std::map<int, std::vector<typename dcel_t::node_t*>>& supplementary_points, 
-                                        std::map<int, typename simplex_t::NodeType>& midpoints_lookup, std::set<int>& on_boundary, 
+                                        const std::map<int, typename simplex_t::NodeType>& midpoints_lookup, std::set<int>& on_boundary, 
                                         std::map<int, std::pair<int, int>>& edge_vertexes2intersection, int infty_id, int& counter){  
         // Get v_cell and d_vertex ID
         int d_vertex_id = to_check_v_cells.front();
@@ -514,7 +511,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
 
-    typename simplex_t::NodeType compute_center_of_mass(std::list<typename dcel_t::node_t*> points){
+    typename simplex_t::NodeType compute_center_of_mass(const std::list<typename dcel_t::node_t*> points) const{
         typename simplex_t::NodeType center_of_mass;
 		center_of_mass(0) = 0;
         center_of_mass(1) = 0;
@@ -534,7 +531,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
                                     const Eigen::Matrix<double, 2, 1>& q1,
                                     const Eigen::Matrix<double, 2, 1>& q2,
                                     bool& check_intersection,
-                                    typename simplex_t::NodeType& intersection_point){  
+                                    typename simplex_t::NodeType& intersection_point) const{  
         check_intersection = false;
 
         const double dx1 = p2(0) - p1(0);
@@ -578,7 +575,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
     }
 
 
-    std::map<int, std::vector<int>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh){  
+    std::map<int, std::vector<int>> adjacent_points(const Triangulation<local_dim, embed_dim>& mesh) const{  
 
         std::map<int, std::vector<int>> adjacent_points_map;
         
@@ -615,10 +612,10 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
 
     // Function to check if a point lies in a cell
-    const bool is_point_in_cell(const coords_t& point, int cell_id){
+    const bool is_point_in_cell(const coords_t& point, int cell_id) const{
         
         // Retrieve cell
-        auto cell = this->cells_map[cell_id];
+        auto cell = this->cells_map.at(cell_id);
 
         // Compute its points
         std::vector<node_t*> cell_nodes_vector = cell->cell_nodes();
@@ -635,7 +632,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
 
     // Find Voronoi centroid closest to a given point
-    const int find_closest_v_centroid(const coords_t& point){
+    int find_closest_v_centroid(const coords_t& point) const{
         // Closest v_centroid
         int min_id = 0;
 
@@ -675,7 +672,7 @@ class VoronoiClipped : public Voronoi<LocalDim, EmbedDim>{
 
             // Loop over halfedges
             bool found_one = false;
-            for (auto halfedge = this->dcel_.halfedges_begin(); halfedge != this->dcel_.halfedges_end(); ++halfedge){
+            for (auto halfedge = this->dcel_.halfedges_cbegin(); halfedge != this->dcel_.halfedges_cend(); ++halfedge){
                 if (!(halfedge->on_boundary())) continue;
                 // Verify if there is intersection
                 Eigen::Matrix<double, 2, 1> p1 = this->v_cell2v_centroid[min_id];

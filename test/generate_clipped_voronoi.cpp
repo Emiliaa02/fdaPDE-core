@@ -29,17 +29,21 @@
 using namespace fdapde;
 
 
-int main() {
-    // Load a mesh
-    Triangulation<2, 2> mesh("test/data/mesh/unit_square_16/points.csv", "test/data/mesh/unit_square_16/elements.csv", "test/data/mesh/unit_square_16/boundary.csv", true, true);
-    // auto mesh = Triangulation<2, 2>::Square(0.0, 2.0, 256);
+int main(int argc, char* argv[]) {
 
-    // Print mesh measure
-    std::cout<<"Mesh measure:"<<mesh.measure()<<std::endl;
+    // Read shape if present
+    if (argc < 2){
+        std::cerr << "Shape needed as input" << std::endl;
+        return 1;
+    }
+    std::string shape = argv[1];
+
+    // Load a mesh
+    Triangulation<2, 2> mesh("test/data/mesh/" + shape + "/points.csv", 
+                        "test/data/mesh/" + shape + "/elements.csv", 
+                        "test/data/mesh/" + shape + "/boundary.csv", true, true);
 
     VoronoiClipped<2, 2> voronoi_obj(mesh);
-
-    std::cout << "Voronoi has " << voronoi_obj.n_nodes() << " nodes, " << voronoi_obj.n_edges() << " edges and " << voronoi_obj.n_cells() << " cells." << std::endl;
 
     // Compute the measure for each Voronoi cell and the total Voronoi measure
     int i = 0;
@@ -60,13 +64,15 @@ int main() {
     }
 
     // Print the total measure
-    std::cout << "Printed area of " << i << " cells" << std::endl;
-    std::cout << "Area: " << sum <<std::endl;
-    std::cout << "Number of unbounded cell: " << unbdd << std::endl;
+    std::cout << "Mesh Area: " << mesh.measure() << "; Voronoi Area: " << sum << std::endl;
+    if(mesh.measure()==sum){
+        std::cout << "The two areas coincide!" << std::endl;
+    }
 
     // Export the Voronoi in a json file
+    std::cout << "\n\n\n" << std::endl;
     std::cout << "Exporting..." << std::endl;
-    voronoi_obj.export_to_json("test/plots/data/unit_square_16.json");
+    voronoi_obj.export_to_json("test/plots/data/" + shape + ".json");
     std::cout << "Finished exporting" << std::endl;
 
     return 0;
