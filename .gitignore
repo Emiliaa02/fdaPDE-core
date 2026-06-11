@@ -1,7 +1,6 @@
 *.txt
 *.json
 *.cmake
-*Makefile
 *.Rhistory
 *.tar.gz
 *.RData
