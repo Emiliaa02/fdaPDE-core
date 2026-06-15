@@ -1,21 +1,61 @@
-<div align="center"> <h1> fdaPDE </h1>
+<h1> C++ Code for Unrestricted and Clipped Voronoi Diagrams </h1>
 
-<h5> Physics-Informed Spatial and Functional Data Analysis </h5> </div>
-
-![test-linux-gcc](https://img.shields.io/github/actions/workflow/status/fdaPDE/fdaPDE-core/test-linux-gcc.yml?branch=stable&label=test-linux-gcc)
-![test-linux-clang](https://img.shields.io/github/actions/workflow/status/fdaPDE/fdaPDE-core/test-linux-clang.yml?branch=stable&label=test-linux-clang)
-![test-macos-clang](https://img.shields.io/github/actions/workflow/status/fdaPDE/fdaPDE-core/test-macos-clang.yml?branch=stable&label=test-macos-clang)
-
-This repository contains the C++, header-only, core library system for the fdaPDE project, providing basic functionalities like a finite element solver for second-order linear elliptic boundary value problems, nonlinear unconstrained optimization algorithms, linear and non-linear system solvers, multithreading support, and more.
-
-## Documentation
-Documentation can be found on our [documentation site](https://fdapde.github.io/)
+This repository is a fork of the `stable` branch of the `fdaPDE` library and contains a `C++` implementation of Unrestricted and Clipped Voronoi diagrams, integrated within `fdaPDE`. 
 
 ## Dependencies
-fdaPDE-core is an header-only library, therefore it does not require any installation. Just make sure to have it in your include path. Neverthless, to compile code including this library you need:
-* A C++20 compliant compiler. Supported versions are:
-     * Linux: `gcc` 11 (or higher), `clang` 15 (or higher)
-	 * macOS: `apple-clang` (the XCode version of `clang`, AppleClang 15 or higher).
-* The [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page) linear algebra library, version 3.4.0.
+The requirements for running the code and reproducing the described pipelines are listed below:
 
-If you wish to run the test suite contained in the `test/` folder, be sure to have [Google Test](http://google.github.io/googletest/) installed. 
+- a C++20-compliant compiler;
+- `make`;
+- `Eigen` library;
+- `nhlomann/json` header;
+- `Python 3`, along with the `matplotlib` package.
+
+## Installation
+To install the project locally on your laptop, open the terminal and run:
+
+```bash 
+git clone https://github.com/Emiliaa02/fdaPDE-core.git 
+cd fdaPDE-core
+```
+
+## Instructions to run tests
+As the construction of the Voronoi diagram builds upon an existing Delaunay mesh, it is necessary that the `test/data/mesh/` folder is filled with all data of the meshes to be used. In particular, for a specific mesh (e.g. `unit_square_16`), there must be a folder containing the files `boundary.csv`, `edges.csv`, `elements.csv` and `points.csv`. In case after cloning the repo these files are not present, manually download them from GitHub and put them in the right folder.
+
+The following tests can be run once inside the `fdaPDE-core` folder. We will denote with *shape* the general shape one can choose to compute the Voronoi of. In the code, one can choose between `unit_square_16`, `unit_square_32`,`unit_square_64`, `unit_square_128`, `quasi_circle`, `c_shaped`, `north_italy` and `brain`. When it is not specified, the default *shape* is `unit_square_16`:
+
+- To generate a clipped Voronoi diagram and compare its area with the starting Delaunay mesh area run:
+
+```bash
+make generate_clipped_voronoi SHAPE=shape
+```
+
+The plotted Voronoi diagram will be stored in `test/plots/`, whereas the data structures encoding the built Voronoi as DCEL object are stores as `.json` files inside `test/plots/data/`.
+
+- To check that the Voronoi diagram of *shape* satisfies the definition of geodesic Voronoi run:
+
+```bash
+make check_voronoi_definition SHAPE=shape
+```
+
+This will check the Voronoi definition on 100,000 points lying inside the domain, and outputs the percentage of points satisfying it.
+
+- To measure the computational times required by `Voronoi` and `VoronoiClipped` to build the diagram, run:
+
+```bash
+make computational_times
+```
+
+which will run the constructor both for clipped and unclipped Voronoi over all the four meshes of `unit_square`. The output plots representing the computational cost in terms of the number of seeds can be found in `test/plots/`.
+
+- To run all these tests in once, do:
+
+```bash
+make all SHAPE=shape
+```
+
+- To clean the directories from `.json` and `.png` files, run:
+
+```bash
+    make clean
+```
