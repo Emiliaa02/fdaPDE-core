@@ -57,5 +57,5 @@ make all SHAPE=shape
 - To clean the directories from `.json` and `.png` files, run:
 
 ```bash
-    make clean
+make clean
 ```
