@@ -65,9 +65,6 @@ int main(int argc, char* argv[]) {
 
     // Print the total measure
     std::cout << "Mesh Area: " << mesh.measure() << "; Voronoi Area: " << sum << std::endl;
-    if(mesh.measure()==sum){
-        std::cout << "The two areas coincide!" << std::endl;
-    }
 
     // Create the directory data
     std::filesystem::create_directories("test/plots/data");
