@@ -69,6 +69,8 @@ int main(int argc, char* argv[]) {
         std::cout << "The two areas coincide!" << std::endl;
     }
 
+    // Create the directory data
+    std::filesystem::create_directories("test/plots/data");
     // Export the Voronoi in a json file
     std::cout << "\n\n\n" << std::endl;
     std::cout << "Exporting..." << std::endl;
